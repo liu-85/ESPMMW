@@ -2,18 +2,6 @@ name: Build ESPHome Firmware
 
 on:
   workflow_dispatch:
-    inputs:
-      action:
-        description: 'Action to perform'
-        required: true
-        default: 'build'
-        type: choice
-        options:
-          - build
-          - build_and_update
-
-env:
-  ESPHOME_VERSION: "2024.12.0"
 
 jobs:
   build:
@@ -21,6 +9,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Create secrets.yaml
+        run: |
+          cat > secrets.yaml << EOF
+          wifi_ssid: "${{ secrets.WIFI_SSID }}"
+          wifi_password: "${{ secrets.WIFI_PASSWORD }}"
+          ota_password: "${{ secrets.OTA_PASSWORD }}"
+          api_password: "${{ secrets.API_PASSWORD }}"
+          EOF
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -30,7 +27,7 @@ jobs:
       - name: Install ESPHome
         run: |
           pip install --upgrade pip
-          pip install esphome==${{ env.ESPHOME_VERSION }}
+          pip install esphome
 
       - name: Build Firmware
         run: esphome compile master_espmmw01.yaml
@@ -43,59 +40,9 @@ jobs:
           retention-days: 30
 
       - name: Upload Build Info
-        run: |
-          echo "${{ github.sha }}" > .pioenvs/master_espmmw01/build_version.txt
-          echo "$(date)" >> .pioenvs/master_espmmw01/build_date.txt
-        shell: bash
-
-      - name: Upload Build Info
         uses: actions/upload-artifact@v4
         with:
           name: build-info
           path: |
-            .pioenvs/master_espmmw01/build_version.txt
-            .pioenvs/master_espmmw01/build_date.txt
-          retention-days: 30
-
-  update:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event.inputs.action == 'build_and_update'
-    steps:
-      - name: Download Firmware
-        uses: actions/download-artifact@v4
-        with:
-          name: firmware
-
-      - name: Upload to OTA Server
-        run: |
-          # 将固件移动到可访问的位置
-          mv firmware.bin ./ota/firmware.bin
-          
-          # 创建版本文件
-          echo "${{ github.sha }}" > ./ota/version.txt
-          echo "${{ github.event.inputs.action }}" >> ./ota/version.txt
-          
-      - name: Trigger Device Update via Webhook
-        if: false
-        run: |
-          curl -X POST "http://your-device-ip:80/update" \
-            -F "file=@firmware.bin"
-
-      - name: Create OTA Update Script
-        run: |
-          cat > ota_update.sh << 'EOF'
-          #!/bin/bash
-          # 使用此脚本在设备上执行 OTA 更新
-          curl -X OTA http://<device_ip>/update -F "file=@firmware.bin"
-          EOF
-          chmod +x ota_update.sh
-
-      - name: Upload OTA Package
-        uses: actions/upload-artifact@v4
-        with:
-          name: ota-package
-          path: |
-            firmware.bin
-            ota_update.sh
-          retention-days: 30
+            secrets.yaml
+          retention-days: 1
