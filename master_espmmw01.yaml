@@ -8,9 +8,6 @@ esphome:
     priority: -100
     then:
       - delay: 5s
-      - sensor.template.publish:
-          id: update_available
-          state: OFF
 
 esp32:
   board: esp32-c3-devkitm-1
@@ -28,43 +25,16 @@ debug:
   update_interval: 5s
 
 api:
+  password: !secret api_password
   reboot_timeout: 5min
-  on_client_connected:
-    - if:
-        condition:
-          lambda: 'return id(ota_update_available);'
-        then:
-          - delay: 1s
-          - esphome.update:
-              id: ota_update_available
 
 ota:
   - platform: esphome
-    password: "Liuchenxi1121"
-    on_begin:
-      - light.turn_on:
-          id: status_led
-          brightness: 100%
-          red: 100%
-          green: 0%
-          blue: 0%
-    on_end:
-      - light.turn_off:
-          id: status_led
-    on_error:
-      - light.turn_on:
-          id: status_led
-          brightness: 100%
-          red: 100%
-          green: 0%
-          blue: 0%
-      - delay: 1s
-      - light.turn_off:
-          id: status_led
+    password: !secret ota_password
 
 wifi:
-  ssid: xiaomi2
-  password: Liuchenxi1121
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
   fast_connect: on
 
 web_server:
@@ -151,14 +121,34 @@ sensor:
       internal: true
   - platform: adc
     pin: 3
-    name: ${device_name}_brightness
+    name: ${device_name}_illuminance
     attenuation: 11db
     update_interval: 5s
-    unit_of_measurement: "%"
-    icon: mdi:brightness-6
+    unit_of_measurement: "lx"
+    icon: mdi:white-balance-sunny
     accuracy_decimals: 0
     filters:
-      - lambda: "return ( 3 - x ) / 0.03;"
+      - lambda: |-
+          // ADC 值转换为勒克斯
+          // 分压电路: 3.3V -> 10K 电阻 -> 光敏电阻 -> GND
+          float voltage = x;  // ADC 输出电压
+          float pullup = 10000.0;  // 10K 上拉电阻
+          
+          // 计算光敏电阻阻值
+          float resistance = (3.3 / voltage - 1.0) * pullup;
+          
+          // GL5528 光敏电阻 -> 勒克斯转换
+          // 不同传感器系数不同，可调整 5000 这个值
+          float lux = 500000.0 / (resistance * 10.0);
+          
+          // 范围限制
+          if (isnan(lux) || isinf(lux) || lux < 0) {
+            return 0.0;
+          }
+          if (lux > 10000) {
+            return 10000.0;
+          }
+          return lux;
   - platform: internal_temperature
     name: ${device_name}_cpu_temprature
     icon: mdi:thermometer
@@ -176,12 +166,6 @@ sensor:
     static_energy:
       name: ${device_name}_static_energy
       internal: true
-  - platform: template
-    id: ota_update_available
-    name: ${device_name}_ota_available
-    icon: mdi:update
-    internal: true
-    update_interval: 30s
 
 number:
   - platform: ra2413mt
