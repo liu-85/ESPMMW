@@ -25,13 +25,14 @@ debug:
   update_interval: 5s
 
 api:
-  password: !secret api_password
+  encryption:
+    key: !secret api_encryption_key
   reboot_timeout: 5min
-
+# ota 也需要更新
 ota:
   - platform: esphome
     password: !secret ota_password
-
+# wifi 保持不变
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
