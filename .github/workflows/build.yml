@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        device: [espmmw01, espmmw02, espmmw03]
+        device: [master_espmmw01, espmmw02, espmmw03]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -79,7 +79,7 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.HA_TOKEN }}" \
             -d '{
               "version": "${{ github.event.inputs.version }}",
-              "devices": ["Master Espmmw01", "espmmw02", "espmmw03"],
+              "devices": ["master_espmmw01", "espmmw02", "espmmw03"],
               "release_url": "https://github.com/liu-85/ESPMMW/releases/tag/${{ github.event.inputs.version }}"
             }'
   # ==========================================
