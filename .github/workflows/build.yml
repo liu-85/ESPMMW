@@ -30,7 +30,7 @@ jobs:
           pip install esphome==2025.3.3
 
       - name: Build Firmware
-        run: esphome compile esphome/master_espmmw01.yaml
+        run: esphome compile esphome/masterespmmw01.yaml
 
       - name: Get Version
         id: version
