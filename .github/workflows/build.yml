@@ -10,13 +10,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create secrets.yaml  # ← 自动生成 secrets.yaml
+      - name: Create secrets.yaml
         run: |
-          cat > secrets.yaml << EOF
+          cat > esphome/secrets.yaml << EOF
           wifi_ssid: "${{ secrets.WIFI_SSID }}"
           wifi_password: "${{ secrets.WIFI_PASSWORD }}"
           ota_password: "${{ secrets.OTA_PASSWORD }}"
-          api_password: "${{ secrets.API_PASSWORD }}"
+          api_encryption_key: "${{ secrets.API_ENCRYPTION_KEY }}"
           EOF
 
       - name: Setup Python
@@ -30,7 +30,7 @@ jobs:
           pip install esphome
 
       - name: Build Firmware
-        run: esphome compile master_espmmw01.yaml
+        run: esphome compile esphome/master_espmmw01.yaml
 
       - name: Upload Firmware
         uses: actions/upload-artifact@v4
