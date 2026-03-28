@@ -1,28 +1,39 @@
-name: Build and Release ESPHome Firmware
+name: Build All ESPHome Devices
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g., v1.0.0)'
+        description: 'Release version'
         required: false
         default: ''
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        device: [espmmw01, espmmw02, espmmw03]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ========== 使用 Secrets 创建 secrets.yaml ==========
       - name: Create secrets.yaml
         run: |
           cat > esphome/secrets.yaml << EOF
           wifi_ssid: "${{ secrets.WIFI_SSID }}"
           wifi_password: "${{ secrets.WIFI_PASSWORD }}"
+          wifi_ssid_2: "${{ secrets.WIFI_SSID_2 }}"
+          wifi_password_2: "${{ secrets.WIFI_PASSWORD_2 }}"
+          wifi_ssid_3: "${{ secrets.WIFI_SSID_3 }}"
+          wifi_password_3: "${{ secrets.WIFI_PASSWORD_3 }}"
           ota_password: "${{ secrets.OTA_PASSWORD }}"
           api_encryption_key: "${{ secrets.API_ENCRYPTION_KEY }}"
+          ha_url: "${{ secrets.HA_URL }}"
+          ha_token: "${{ secrets.HA_TOKEN }}"
           EOF
+      # ====================================================
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -32,39 +43,43 @@ jobs:
       - name: Install ESPHome
         run: |
           pip install --upgrade pip
-          pip install esphome==2025.3.3
+          pip install esphome
 
       - name: Build Firmware
-        run: esphome compile esphome/masterespmmw01.yaml
+        run: esphome compile esphome/${{ matrix.device }}.yaml
 
       - name: Find Firmware
         id: firmware
         run: |
           FIRMWARE=$(find . -name "firmware.bin" -type f 2>/dev/null | head -n 1)
-          echo "Found firmware: $FIRMWARE"
           echo "path=$FIRMWARE" >> $GITHUB_OUTPUT
 
-      - name: Get Version
-        id: version
-        run: |
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            echo "version=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
-          fi
-
       - name: Rename Firmware
-        run: |
-          cp ${{ steps.firmware.outputs.path }} firmware-${{ steps.version.outputs.version }}.bin
+        run: cp ${{ steps.firmware.outputs.path }} ${{ matrix.device }}.bin
 
-      - name: Create Release
+      - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.version }}
-          name: ESPHome Firmware ${{ steps.version.outputs.version }}
+          tag_name: ${{ github.event.inputs.version }}
+          name: ESPHome Firmware ${{ github.event.inputs.version }}
           draft: false
-          prerelease: ${{ contains(steps.version.outputs.version, 'beta') || contains(steps.version.outputs.version, 'alpha') }}
-          files: |
-            firmware-${{ steps.version.outputs.version }}.bin
+          files: ${{ matrix.device }}.bin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ========== 使用 Secrets 通知 HA ==========
+  notify:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Home Assistant
+        run: |
+          curl -X POST "${{ secrets.HA_URL }}/api/webhook/firmware_available" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.HA_TOKEN }}" \
+            -d '{
+              "version": "${{ github.event.inputs.version }}",
+              "devices": ["Master Espmmw01", "espmmw02", "espmmw03"],
+              "release_url": "https://github.com/liu-85/ESPMMW/releases/tag/${{ github.event.inputs.version }}"
+            }'
+  # ==========================================
