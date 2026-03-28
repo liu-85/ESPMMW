@@ -30,10 +30,20 @@ jobs:
           pip install esphome==2025.3.3
 
       - name: Build Firmware
-        run: esphome compile esphome/masterespmmw01.yaml
+        run: esphome compile esphome/master_espmmw01.yaml
+
+      - name: Get Version
+        id: version
+        run: echo "version=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
       - name: Upload Firmware
         uses: actions/upload-artifact@v4
         with:
-          name: firmware
+          name: firmware-${{ steps.version.outputs.version }}
           path: .pioenvs/masterespmmw01/firmware.bin
+
+      - name: Delete Old Artifacts
+        uses: c-hive/gha-remove-artifacts@v1
+        with:
+          age: '0 seconds'
+          skip-recent: 2
