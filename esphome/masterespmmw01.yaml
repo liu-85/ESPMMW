@@ -60,6 +60,7 @@ light:
     id: status_led
     pin: GPIO7
     num_leds: 1
+    variant: WS2812x
     name: ${device_name}_status_led
     restore_mode: ALWAYS_OFF
 
