@@ -1,7 +1,12 @@
-name: Build ESPHome Firmware
+name: Build and Release ESPHome Firmware
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: false
+        default: ''
 
 jobs:
   build:
@@ -34,16 +39,25 @@ jobs:
 
       - name: Get Version
         id: version
-        run: echo "version=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Upload Firmware
-        uses: actions/upload-artifact@v4
-        with:
-          name: firmware-${{ steps.version.outputs.version }}
-          path: .pioenvs/masterespmmw01/firmware.bin
+      - name: Rename Firmware
+        run: |
+          cp .pioenvs/masterespmmw01/firmware.bin firmware-${{ steps.version.outputs.version }}.bin
 
-      - name: Delete Old Artifacts
-        uses: c-hive/gha-remove-artifacts@v1
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
         with:
-          age: '0 seconds'
-          skip-recent: 2
+          tag_name: ${{ steps.version.outputs.version }}
+          name: ESPHome Firmware ${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.version, 'beta') || contains(steps.version.outputs.version, 'alpha') }}
+          files: |
+            firmware-${{ steps.version.outputs.version }}.bin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
