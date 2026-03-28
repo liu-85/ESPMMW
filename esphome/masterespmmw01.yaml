@@ -56,12 +56,11 @@ ra2413mt:
 
 # 状态指示灯
 light:
-  - platform: rgb
+  - platform: neopixelbus
     id: status_led
-    pin: 7
-    red: 0%
-    green: 100%
-    blue: 0%
+    pin: GPIO7
+    num_leds: 1
+    name: ${device_name}_status_led
     restore_mode: ALWAYS_OFF
 
 text_sensor:
