@@ -27,7 +27,7 @@ jobs:
       - name: Install ESPHome
         run: |
           pip install --upgrade pip
-          pip install esphome
+          pip install esphome==2025.3.3
 
       - name: Build Firmware
         run: esphome compile esphome/masterespmmw01.yaml
