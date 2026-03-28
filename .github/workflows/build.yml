@@ -30,10 +30,10 @@ jobs:
           pip install esphome
 
       - name: Build Firmware
-        run: esphome compile esphome/master_espmmw01.yaml
+        run: esphome compile esphome/masterespmmw01.yaml
 
       - name: Upload Firmware
         uses: actions/upload-artifact@v4
         with:
           name: firmware
-          path: .pioenvs/master_espmmw01/firmware.bin
+          path: .pioenvs/masterespmmw01/firmware.bin
