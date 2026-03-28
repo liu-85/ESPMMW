@@ -37,6 +37,13 @@ jobs:
       - name: Build Firmware
         run: esphome compile esphome/masterespmmw01.yaml
 
+      - name: Find Firmware
+        id: firmware
+        run: |
+          FIRMWARE=$(find . -name "firmware.bin" -type f 2>/dev/null | head -n 1)
+          echo "Found firmware: $FIRMWARE"
+          echo "path=$FIRMWARE" >> $GITHUB_OUTPUT
+
       - name: Get Version
         id: version
         run: |
@@ -48,7 +55,7 @@ jobs:
 
       - name: Rename Firmware
         run: |
-          cp .pioenvs/masterespmmw01/firmware.bin firmware-${{ steps.version.outputs.version }}.bin
+          cp ${{ steps.firmware.outputs.path }} firmware-${{ steps.version.outputs.version }}.bin
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
