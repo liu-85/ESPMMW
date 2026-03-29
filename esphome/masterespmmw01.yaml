@@ -144,7 +144,7 @@ sensor:
           float lux = 500000.0 / (resistance * 10.0);
           
           // 范围限制
-          if (isnan(lux) || isinf(lux) || lux < 0) {
+          if (std::isnan(lux) || std::isinf(lux) || lux < 0) {
             return 0.0;
           }
           if (lux > 10000) {
