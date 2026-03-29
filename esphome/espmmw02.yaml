@@ -1,9 +1,9 @@
 substitutions:
-  device_name: master_espmmw02
+  device_name: espmmw02
 
 esphome:
   name: ${device_name}
-  friendly_name: master_espmmw02
+  friendly_name: espmmw02
   on_boot:
     priority: -100
     then:
