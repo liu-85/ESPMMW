@@ -54,7 +54,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.device }}-firmware
-          path: .pioenvs/${{ matrix.device }}/firmware.bin
+          path: |
+            .pioenvs/${{ matrix.device }}/firmware.bin
+            .pioenvs/${{ matrix.device }}/firmware.elf
           retention-days: 7
 
   release:
@@ -62,18 +64,29 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
     steps:
-      - name: Download All Artifacts
+      - name: Download espmmw01 Artifact
         uses: actions/download-artifact@v4
         with:
-          path: firmware
-          pattern: '*-firmware'
-          merge-multiple: true
+          name: espmmw01-firmware
+          path: espmmw01
+
+      - name: Download espmmw02 Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: espmmw02-firmware
+          path: espmmw02
+
+      - name: Download espmmw03 Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: espmmw03-firmware
+          path: espmmw03
 
       - name: Prepare Release Assets
         run: |
-          mv firmware/espmmw01-firmware.bin espmmw01.bin
-          mv firmware/espmmw02-firmware.bin espmmw02.bin
-          mv firmware/espmmw03-firmware.bin espmmw03.bin
+          mv espmmw01/firmware.bin espmmw01.bin
+          mv espmmw02/firmware.bin espmmw02.bin
+          mv espmmw03/firmware.bin espmmw03.bin
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
