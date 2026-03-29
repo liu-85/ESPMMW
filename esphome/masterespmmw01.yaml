@@ -56,11 +56,12 @@ ra2413mt:
 
 # 状态指示灯
 light:
-  - platform: neopixelbus
+  - platform: esp32_rmt_led_strip
     id: status_led
     pin: GPIO7
     num_leds: 1
-    variant: WS2812x
+    rmt_channel: 0
+    rgb_order: GRB
     name: ${device_name}_status_led
     restore_mode: ALWAYS_OFF
 
@@ -123,7 +124,7 @@ sensor:
   - platform: adc
     pin: 3
     name: ${device_name}_illuminance
-    attenuation: 11db
+    attenuation: 12db
     update_interval: 5s
     unit_of_measurement: "lx"
     icon: mdi:white-balance-sunny
