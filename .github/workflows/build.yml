@@ -24,10 +24,6 @@ jobs:
           cat > esphome/secrets.yaml << EOF
           wifi_ssid: "${{ secrets.WIFI_SSID }}"
           wifi_password: "${{ secrets.WIFI_PASSWORD }}"
-          wifi_ssid_2: "${{ secrets.WIFI_SSID_2 }}"
-          wifi_password_2: "${{ secrets.WIFI_PASSWORD_2 }}"
-          wifi_ssid_3: "${{ secrets.WIFI_SSID_3 }}"
-          wifi_password_3: "${{ secrets.WIFI_PASSWORD_3 }}"
           ota_password: "${{ secrets.OTA_PASSWORD }}"
           api_encryption_key: "${{ secrets.API_ENCRYPTION_KEY }}"
           ha_url: "${{ secrets.HA_URL }}"
