@@ -5,8 +5,14 @@ on:
     inputs:
       version:
         description: 'Release version'
-        required: false
+        required: true
         default: ''
+  push:
+    branches:
+      - main
+    paths:
+      - 'esphome/**'
+      - '.github/workflows/build.yml'
 
 jobs:
   build:
@@ -39,34 +45,54 @@ jobs:
       - name: Install ESPHome
         run: |
           pip install --upgrade pip
-          pip install esphome
+          pip install esphome==2025.7.5
 
       - name: Build Firmware
         run: esphome compile esphome/${{ matrix.device }}.yaml
 
-      - name: Find Firmware
-        id: firmware
+      - name: Upload Firmware Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.device }}-firmware
+          path: .pioenvs/${{ matrix.device }}/firmware.bin
+          retention-days: 7
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: firmware
+          pattern: '*-firmware'
+          merge-multiple: true
+
+      - name: Prepare Release Assets
         run: |
-          FIRMWARE=$(find . -name "firmware.bin" -type f 2>/dev/null | head -n 1)
-          echo "path=$FIRMWARE" >> $GITHUB_OUTPUT
+          mv firmware/espmmw01-firmware.bin espmmw01.bin
+          mv firmware/espmmw02-firmware.bin espmmw02.bin
+          mv firmware/espmmw03-firmware.bin espmmw03.bin
 
-      - name: Rename Firmware
-        run: cp ${{ steps.firmware.outputs.path }} ${{ matrix.device }}.bin
-
-      - name: Upload Release Asset
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.version }}
           name: ESPHome Firmware ${{ github.event.inputs.version }}
           draft: false
-          files: ${{ matrix.device }}.bin
+          files: |
+            espmmw01.bin
+            espmmw02.bin
+            espmmw03.bin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ========== 使用 Secrets 通知 HA ==========
   notify:
-    needs: build
+    needs: [build, release]
     runs-on: ubuntu-latest
+    if: success() && github.event_name == 'workflow_dispatch'
     steps:
       - name: Notify Home Assistant
         run: |
@@ -76,6 +102,6 @@ jobs:
             -d '{
               "version": "${{ github.event.inputs.version }}",
               "devices": ["espmmw01", "espmmw02", "espmmw03"],
-              "release_url": "https://github.com/liu-85/ESPMMW/releases/tag/${{ github.event.inputs.version }}"
+              "release_url": "https://github.com/${{ github.repository }}/releases/tag/${{ github.event.inputs.version }}"
             }'
   # ==========================================
