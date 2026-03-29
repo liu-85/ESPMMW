@@ -50,7 +50,15 @@ jobs:
       - name: Build Firmware
         run: esphome compile esphome/${{ matrix.device }}.yaml
 
+      - name: List Build Output
+        run: |
+          echo "Listing .pioenvs directory..."
+          ls -la .pioenvs/
+          echo "Listing device directory..."
+          ls -la .pioenvs/${{ matrix.device }}/ || echo "Device directory not found"
+
       - name: Upload Firmware Artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.device }}-firmware
@@ -58,6 +66,7 @@ jobs:
             .pioenvs/${{ matrix.device }}/firmware.bin
             .pioenvs/${{ matrix.device }}/firmware.elf
           retention-days: 7
+          if-no-files-found: error
 
   release:
     needs: build
