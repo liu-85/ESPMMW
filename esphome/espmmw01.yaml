@@ -60,7 +60,6 @@ light:
     id: status_led
     pin: GPIO7
     num_leds: 1
-    rmt_channel: 0
     rgb_order: GRB
     name: ${device_name}_status_led
     restore_mode: ALWAYS_OFF
