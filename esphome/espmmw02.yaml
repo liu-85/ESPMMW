@@ -12,7 +12,8 @@ esphome:
 esp32:
   board: esp32-c3-devkitm-1
   framework:
-    type: esp-idf
+    type: arduino
+    version: latest
 
 external_components:
   - source: github://liu-85/ESPMMW
@@ -32,6 +33,7 @@ api:
 ota:
   - platform: esphome
     password: !secret ota_password
+  - platform: web_server
 # wifi 保持不变
 wifi:
   ssid: !secret wifi_ssid
