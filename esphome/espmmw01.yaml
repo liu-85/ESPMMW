@@ -130,29 +130,20 @@ sensor:
     update_interval: 5s
     unit_of_measurement: "lx"
     icon: mdi:white-balance-sunny
-    accuracy_decimals: 0
     filters:
       - lambda: |-
-          // ADC 值转换为勒克斯
-          // 分压电路: 3.3V -> 10K 电阻 -> 光敏电阻 -> GND
-          float voltage = x;  // ADC 输出电压
-          float pullup = 10000.0;  // 10K 上拉电阻
-          
-          // 计算光敏电阻阻值
+          float voltage = x;
+          float pullup = 10000.0;
           float resistance = (3.3 / voltage - 1.0) * pullup;
-          
-          // GL5528 光敏电阻 -> 勒克斯转换
-          // 不同传感器系数不同，可调整 5000 这个值
           float lux = 500000.0 / (resistance * 10.0);
           
-          // 范围限制
           if (std::isnan(lux) || std::isinf(lux) || lux < 0) {
-            return 0.0;
+            return 0;
           }
           if (lux > 10000) {
-            return 10000.0;
+            return 10000;
           }
-          return lux;
+          return (int)lux;  # 改成整数
   - platform: internal_temperature
     name: ${device_name}_cpu_temprature
     icon: mdi:thermometer
