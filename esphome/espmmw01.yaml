@@ -143,7 +143,7 @@ sensor:
           if (lux > 10000) {
             return 10000;
           }
-          return (int)lux;  # 改成整数
+          return (int)lux;
   - platform: internal_temperature
     name: ${device_name}_cpu_temprature
     icon: mdi:thermometer
