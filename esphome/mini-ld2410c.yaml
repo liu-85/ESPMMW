@@ -119,7 +119,7 @@ sensor:
     name: ${device_name}_cpu_temprature
     icon: mdi:thermometer
     internal: true
-  - platform: ra2413mt
+  - platform: ld2410
     move_distance:
       name: ${device_name}_move_distance
       internal: true
@@ -134,7 +134,7 @@ sensor:
       internal: true
 
 number:
-  - platform: ra2413mt
+  - platform: ld2410
     max_move_distance:
       name: ${device_name}_max_move_distance
       default: 4.5
@@ -169,7 +169,7 @@ button:
   - platform: restart
     name: ${device_name}_reboot
     internal: true
-  - platform: ra2413mt
+  - platform: ld2410
     get_conf:
       name: ${device_name}_get_conf
       internal: true
