@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        device: [espmmw01, espmmw02, espmmw03, mini-ld2410c.yaml]
+        device: [espmmw01, espmmw02, espmmw03, minild2410c.yaml]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -89,18 +89,18 @@ jobs:
           name: espmmw03-firmware
           path: espmmw03
       
-      - name: Download mini-ld2410c Artifact
+      - name: Download minild2410c Artifact
         uses: actions/download-artifact@v4
         with:
-          name: mini-ld2410c-firmware
-          path: mini-ld2410c
+          name: minild2410c-firmware
+          path: minild2410c
 
       - name: Prepare Release Assets
         run: |
           mv espmmw01/firmware.bin espmmw01.bin
           mv espmmw02/firmware.bin espmmw02.bin
           mv espmmw03/firmware.bin espmmw03.bin
-          mv mini-ld2410c/firmware.bin mini-ld2410c.bin
+          mv minild2410c/firmware.bin minild2410c.bin
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -112,7 +112,7 @@ jobs:
             espmmw01.bin
             espmmw02.bin
             espmmw03.bin
-            mini-ld2410c.bin
+            minild2410c.bin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -129,7 +129,7 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.HA_TOKEN }}" \
             -d '{
               "version": "${{ github.event.inputs.version }}",
-              "devices": ["espmmw01", "espmmw02", "espmmw03", "mini-ld2410c"],
+              "devices": ["espmmw01", "espmmw02", "espmmw03", "minild2410c"],
               "release_url": "https://github.com/${{ github.repository }}/releases/tag/${{ github.event.inputs.version }}"
             }'
   # ==========================================
