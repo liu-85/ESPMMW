@@ -2,17 +2,17 @@ external_components:
   - source: github://esphome/esphome
     components: [ld2410]
 substitutions:
-  device_name: mini-ld2410c
+  device_name: mini-ld2410
 esphome:
   name: ${device_name}
-  friendly_name: mini-ld2410c
+  friendly_name: mini-ld2410
   on_boot:
     priority: -100
     then:
       - delay: 5s
 esphome:
   name: ${device_name}
-  friendly_name: mini-ld2410c
+  friendly_name: mini-ld2410
   on_boot:
     priority: -100
     then:
