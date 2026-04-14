@@ -62,7 +62,7 @@ binary_sensor:
       name: 静止目标 S
   - platform: gpio
     name: "LD2410 人体感应"
-    id: ld2410c
+    id: ld2410
     pin:
       number: GPIO16   
       mode: INPUT_PULLUP # 稳定模式
