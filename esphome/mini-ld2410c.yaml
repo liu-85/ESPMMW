@@ -47,12 +47,9 @@ ld2410:
 
 binary_sensor:
   - platform: ld2410
-    has_target:
-      name: "LD2410 有人"
-    has_moving_target:
-      name: "移动目标"
-    has_still_target:
-      name: "静止目标"
+    has_target: { name: "LD2410 有人" }
+    has_moving_target: { name: "移动目标" }
+    has_still_target: { name: "静止目标" }
   - platform: gpio
     name: "LD2410 GPIO16 人体感应"
     pin:
