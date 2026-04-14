@@ -58,11 +58,6 @@ text_sensor:
     name: ${device_name}_esphome_version
     icon: mdi:information
     internal: true
-  - platform: ld2410
-    version:
-    name: "LD2410 固件版本"
-    mac_address:
-      name: "LD2410 蓝牙MAC"
 binary_sensor:
   - platform: gpio
     pin: 16
