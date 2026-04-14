@@ -48,15 +48,22 @@ jobs:
       - name: Build Firmware
         run: esphome compile esphome/${{ matrix.device }}.yaml
 
+      # 新增：强制把文件找出来并移动到根目录，防止路径太深找不着
+      - name: Collect Assets
+        run: |
+          mkdir -p artifacts
+          find . -name "firmware.bin" -exec cp {} artifacts/firmware.bin \;
+          find . -name "firmware.elf" -exec cp {} artifacts/firmware.elf \;
+          echo "Files collected:"
+          ls -R artifacts/
+
       - name: Upload Firmware Artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.device }}-firmware
-          # 使用通配符递归查找所有生成的 bin 和 elf
-          path: |
-            **/firmware.bin
-            **/firmware.elf
+          # 这里直接传我们刚才收集好的目录
+          path: artifacts/
           retention-days: 7
           if-no-files-found: error
 
