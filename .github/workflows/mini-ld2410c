@@ -1,0 +1,127 @@
+name: Build All ESPHome Devices
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+        default: ''
+  push:
+    branches:
+      - main
+    paths:
+      - 'esphome/**'
+      - '.github/workflows/build.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        device: [mini-ld2410c]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ========== 使用 Secrets 创建 secrets.yaml ==========
+      - name: Create secrets.yaml
+        run: |
+          cat > esphome/secrets.yaml << EOF
+          wifi_ssid: "${{ secrets.WIFI_SSID }}"
+          wifi_password: "${{ secrets.WIFI_PASSWORD }}"
+          ota_password: "${{ secrets.OTA_PASSWORD }}"
+          api_encryption_key: "${{ secrets.API_ENCRYPTION_KEY }}"
+          ha_url: "${{ secrets.HA_URL }}"
+          ha_token: "${{ secrets.HA_TOKEN }}"
+          EOF
+      # ====================================================
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install ESPHome
+        run: |
+          pip install --upgrade pip
+          pip install esphome==2025.7.5
+
+      - name: Build Firmware
+        run: esphome compile esphome/${{ matrix.device }}.yaml
+
+      - name: List Build Output
+        run: |
+          echo "Listing build directory..."
+          ls -la esphome/.esphome/build/${{ matrix.device }}/.pioenvs/${{ matrix.device }}/ || echo "Build directory not found"
+
+      - name: Upload Firmware Artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.device }}-firmware
+          path: |
+            esphome/.esphome/build/${{ matrix.device }}/.pioenvs/${{ matrix.device }}/firmware.bin
+            esphome/.esphome/build/${{ matrix.device }}/.pioenvs/${{ matrix.device }}/firmware.elf
+          retention-days: 7
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
+    steps:
+      - name: Download espmmw01 Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mini-ld2410c-firmware
+          path: mini-ld2410c
+
+      # - name: Download espmmw02 Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: espmmw02-firmware
+          path: espmmw02
+
+      # - name: Download espmmw03 Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: espmmw03-firmware
+          path: espmmw03
+
+      # - name: Prepare Release Assets
+        run: |
+          mv espmmw01/firmware.bin espmmw01.bin
+          mv espmmw02/firmware.bin espmmw02.bin
+          mv espmmw03/firmware.bin espmmw03.bin
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: ESPHome Firmware ${{ github.event.inputs.version }}
+          draft: false
+          files: |
+            mini-ld2410c.bin
+            # espmmw02.bin
+            # espmmw03.bin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ========== 使用 Secrets 通知 HA ==========
+  notify:
+    needs: [build, release]
+    runs-on: ubuntu-latest
+    if: success() && github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Notify Home Assistant
+        run: |
+          curl -X POST "${{ secrets.HA_URL }}/api/webhook/firmware_available" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.HA_TOKEN }}" \
+            -d '{
+              "version": "${{ github.event.inputs.version }}",
+              "devices": ["mini-ld2410c"],
+              "release_url": "https://github.com/${{ github.repository }}/releases/tag/${{ github.event.inputs.version }}"
+            }'
+  # ==========================================
