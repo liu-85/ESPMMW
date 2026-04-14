@@ -83,7 +83,7 @@ jobs:
           tag_name: ${{ github.event.inputs.version }}
           name: ESPHome Firmware ${{ github.event.inputs.version }}
           draft: false
-          files: mini-ld2410c.bin
+          files: minild2410c.bin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
