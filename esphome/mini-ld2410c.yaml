@@ -10,13 +10,6 @@ esphome:
     priority: -100
     then:
       - delay: 5s
-esphome:
-  name: ${device_name}
-  friendly_name: mini-ld2410
-  on_boot:
-    priority: -100
-    then:
-      - delay: 5s
 
 esp32:
   board: esp32dev
