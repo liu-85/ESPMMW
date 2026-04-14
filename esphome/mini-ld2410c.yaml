@@ -61,7 +61,7 @@ binary_sensor:
     has_still_target:
       name: 静止目标 S
   - platform: gpio
-    name: "LD2410C 人体感应"
+    name: "LD2410 人体感应"
     id: ld2410c
     pin:
       number: GPIO16   
