@@ -20,6 +20,8 @@ esp32:
 logger:
   level: debug
 debug:
+  update_interval: 5s
+
 api:
   encryption:
     key: !secret api_encryption_key
@@ -116,7 +118,7 @@ sensor:
   - platform: adc
     pin: GPIO34
     name: ${device_name}_brightness
-    attenuation: 11db
+    attenuation: 12db
     update_interval: 5s
     unit_of_measurement: "lx"
     icon: mdi:brightness-6
@@ -146,32 +148,25 @@ sensor:
 # 数值控制 (合并为一个平台块)
 number:
   - platform: ld2410
-    # 内部调试
+    # 距离门限设置
     max_move_distance_gate:
       id: ${device_id}_max_move_distance
       name: ${device_name}_max_move_distance
-      default: 4.5
+      # 删除了 default: 4.5
       internal: true
     max_still_distance_gate:
       id: ${device_id}_max_static_distance
       name: ${device_name}_max_static_distance
-      default: 4.5
+      # 删除了 default: 4.5
       internal: true
-    move_sensitivity:
-      id: ${device_id}_move_sensitivity
-      name: ${device_name}_move_sensitivity
-      default: 99
-      internal: true
-    still_sensitivity:
-      id: ${device_id}_static_sensitivity
-      name: ${device_name}_static_sensitivity
-      default: 15
-      internal: true
-    unattended_duration:
-      id: ${device_id}_unattended_duration
-      name: ${device_name}_unattended_duration
-      default: 5
-      internal: true
+    
+    # 门限/敏感度配置
+    # 注意：LD2410 并没有直接叫 move_sensitivity 的 number 实体
+    # 它通常是按距离门(Gate)分别设置的，如果你只想改超时和光阈值，请保留下面这两个：
+    timeout:
+      name: "LD2410 超时"
+    light_threshold:
+      name: "LD2410 光阈值"
     # 外部控制
     timeout:
       name: "LD2410 超时"
