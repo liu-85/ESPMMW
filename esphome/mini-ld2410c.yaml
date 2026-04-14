@@ -110,17 +110,15 @@ sensor:
 # 数值控制 (Web 页面可调参数)
 number:
   - platform: ld2410
+    # 这个 timeout 就是你想要的“无人持续时间/超时时间”
     timeout:
-      name: "Timeout"
+      name: "LD2410 Timeout"
     max_move_distance_gate:
       name: "Max Move Distance"
     max_still_distance_gate:
       name: "Max Still Distance"
     light_threshold:
       name: "Light Threshold"
-    unattended_duration:
-      name: "Unattended Duration"
-
 # 开关控制 (包含蓝牙和工程模式)
 switch:
   - platform: ld2410
