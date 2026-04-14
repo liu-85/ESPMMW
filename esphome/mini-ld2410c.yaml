@@ -48,9 +48,9 @@ uart:
   data_bits: 8
   stop_bits: 1
 
-ld2410c:
-  uart_id: ld2410c_uart
-  id: ld2410c_comp
+ld2410:
+  uart_id: ld2410_uart
+  id: ld2410_comp
 
 binary_sensor:
   - platform: ld2410
@@ -70,7 +70,7 @@ binary_sensor:
     filters:
       - delayed_off: 3s  # 人走延时 3 秒，可改
 sensor:
-  - platform: ld2410c
+  - platform: ld2410
     moving_distance:
       name: 移动距离 Dm
     still_distance:
@@ -83,7 +83,7 @@ sensor:
       name: 检测距离 D
 
 switch:
-  - platform: ld2410c
+  - platform: ld2410
     engineering_mode:
       name: 工程模式 EM
     bluetooth:
@@ -91,7 +91,7 @@ switch:
       restore_mode: ALWAYS_OFF
 
 button:
-  - platform: ld2410c
+  - platform: ld2410
     query_params:
       name: 查询参数 Q
     restart:
@@ -100,7 +100,7 @@ button:
       name: 出厂重置 FR
 
 number:
-  - platform: ld2410c
+  - platform: ld2410
     timeout:
       name: 超时 T
     max_move_distance_gate:
