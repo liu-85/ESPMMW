@@ -47,6 +47,8 @@ uart:
   tx_pin: GPIO17
   rx_pin: GPIO21
   baud_rate: 256000
+  ata_bits: 8
+  stop_bits: 1
 
 # LD2410 核心组件
 ld2410:
@@ -56,147 +58,85 @@ ld2410:
 text_sensor:
   - platform: wifi_info
     ip_address:
-      name: ${device_name}_ip
-      icon: mdi:ip-outline
-      internal: true
-    mac_address:
-      name: ${device_name}_mac
-      icon: mdi:map-marker-outline
+      name: "${device_name} IP"
       internal: true
   - platform: version
-    name: ${device_name}_esphome_version
-    icon: mdi:information
+    name: "${device_name} ESPHome Version"
     internal: true
 
 # 二进制传感器
 binary_sensor:
-  # 人体感应 (GPIO16)
-  - platform: gpio
-    pin: GPIO16
-    name: ${device_name}_mmw
-    device_class: occupancy
-    icon: mdi:motion-sensor
-  # 物理按钮 (建议改用 GPIO4，避开启动引脚 GPIO2)
-  - platform: gpio
-    pin:
-      number: GPIO4
-      mode:
-        input: true
-        pullup: true
-      inverted: true
-    name: ${device_name}_button
-    icon: mdi:radiobox-marked
-    internal: true
-    on_press:
-      then:
-        # 这里必须使用下划线的 ID
-        - button.press: ${device_id}_reset_conf
+  # 这是你在 HA 中需要的第一个核心实体：有人/无人
+  - platform: ld2410
+    has_target:
+      name: "${device_name} Presence"
+      device_class: occupancy
 
 # 传感器
 sensor:
-  - platform: wifi_signal
-    name: ${device_name}_signal
-    icon: mdi:signal
-    internal: true
-  - platform: debug
-    free:
-      name: ${device_name}_free
-      unit_of_measurement: "KB"
-      internal: true
-      filters:
-        - lambda: "return x / 1024;"
-    block:
-      name: ${device_name}_max_block
-      unit_of_measurement: "KB"
-      internal: true
-      filters:
-        - lambda: "return x / 1024;"
-    loop_time:
-      name: ${device_name}_loop_time
-      internal: true
-  # 光照传感器 (已修正为 GPIO34，GPIO3 不可用)
+  # 这是你在 HA 中需要的第二个核心实体：光照
   - platform: adc
     pin: GPIO34
-    name: ${device_name}_brightness
+    name: "${device_name} Illuminance"
     attenuation: 12db
     update_interval: 5s
     unit_of_measurement: "lx"
     icon: mdi:brightness-6
-    accuracy_decimals: 0
     filters:
-      - lambda: |-
-          return ( 3 - x ) / 0.03;
-  - platform: internal_temperature
-    name: ${device_name}_cpu_temprature
-    icon: mdi:thermometer
-    internal: true
-  # 雷达数据
+      - lambda: return (3.0 - x) / 0.03;
+
+  # 以下传感器设为内部，仅供 Web 端或调试查看，不会在 HA 产生多余实体
   - platform: ld2410
     moving_distance:
-      name: ${device_name}_move_distance
-      internal: true
-    moving_energy:
-      name: ${device_name}_move_energy
+      name: "Moving Distance"
       internal: true
     still_distance:
-      name: ${device_name}_static_distance
+      name: "Still Distance"
+      internal: true
+    moving_energy:
+      name: "Moving Energy"
       internal: true
     still_energy:
-      name: ${device_name}_static_energy
+      name: "Still Energy"
+      internal: true
+  
+  - platform: debug
+    free:
+      name: "Heap Free"
+      internal: true
+    loop_time:
+      name: "Loop Time"
       internal: true
 
-# 数值控制 (合并为一个平台块)
+# 数值控制 (Web 页面可调参数)
 number:
   - platform: ld2410
-    # 距离门限设置
+    timeout:
+      name: "Timeout"
     max_move_distance_gate:
-      id: ${device_id}_max_move_distance
-      name: ${device_name}_max_move_distance
-      # 删除了 default: 4.5
-      internal: true
+      name: "Max Move Distance"
     max_still_distance_gate:
-      id: ${device_id}_max_static_distance
-      name: ${device_name}_max_static_distance
-      # 删除了 default: 4.5
-      internal: true
-    
-    # 门限/敏感度配置
-    # 注意：LD2410 并没有直接叫 move_sensitivity 的 number 实体
-    # 它通常是按距离门(Gate)分别设置的，如果你只想改超时和光阈值，请保留下面这两个：
-    timeout:
-      name: "LD2410 超时"
+      name: "Max Still Distance"
     light_threshold:
-      name: "LD2410 光阈值"
-    # 外部控制
-    timeout:
-      name: "LD2410 超时"
-    light_threshold:
-      name: "LD2410 光阈值"
+      name: "Light Threshold"
+    unattended_duration:
+      name: "Unattended Duration"
 
-# 按钮控制 (合并为一个平台块)
-button:
-  - platform: restart
-    name: ${device_name}_reboot
-    internal: true
-  - platform: ld2410
-    get_conf:
-      name: ${device_name}_get_conf
-      internal: true
-    reset_conf:
-      id: ${device_id}_reset_conf
-      name: ${device_name}_reset_conf
-    query_params:
-      name: "LD2410 查询参数"
-    restart:
-      name: "LD2410 传感器重启"
-    factory_reset:
-      name: "LD2410 出厂重置"
-
-# 开关控制
+# 开关控制 (包含蓝牙和工程模式)
 switch:
   - platform: ld2410
     engineering_mode:
-      name: "LD2410 工程模式"
+      name: "${device_name} Engineering Mode"
     bluetooth:
-      name: "LD2410 传感器蓝牙"
+      name: "${device_name} Bluetooth"
       restore_mode: ALWAYS_OFF
+
+# 按钮控制
+button:
+  - platform: ld2410
+    factory_reset:
+      name: "LD2410 Factory Reset"
+    restart:
+      name: "LD2410 Sensor Restart"
+  - platform: restart
+    name: "ESP Restart"
