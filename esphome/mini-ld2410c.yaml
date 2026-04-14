@@ -1,5 +1,8 @@
 substitutions:
+  # 显示名称可以带横杠
   device_name: mini-ld2410
+  # 内部 ID 必须用下划线，这是修复报错的关键
+  device_id: mini_ld2410
 
 esphome:
   name: ${device_name}
@@ -63,16 +66,18 @@ text_sensor:
     icon: mdi:information
     internal: true
 
-# 二进制传感器 (人体感应使用 GPIO16 引脚，避免 UART 实体冲突)
+# 二进制传感器
 binary_sensor:
+  # 人体感应 (GPIO16)
   - platform: gpio
     pin: GPIO16
     name: ${device_name}_mmw
     device_class: occupancy
     icon: mdi:motion-sensor
+  # 物理按钮 (建议改用 GPIO4，避开启动引脚 GPIO2)
   - platform: gpio
     pin:
-      number: GPIO2
+      number: GPIO4
       mode:
         input: true
         pullup: true
@@ -82,7 +87,8 @@ binary_sensor:
     internal: true
     on_press:
       then:
-        - button.press: ${device_name}_reset_conf
+        # 这里必须使用下划线的 ID
+        - button.press: ${device_id}_reset_conf
 
 # 传感器
 sensor:
@@ -106,23 +112,23 @@ sensor:
     loop_time:
       name: ${device_name}_loop_time
       internal: true
-  # ⚠️ GPIO3 不能做 ADC，已注释。如需光照传感器请改用 GPIO34/35/36/39
-  # - platform: adc
-  #   pin: GPIO34 
-  #   name: ${device_name}_brightness
-  #   attenuation: 11db
-  #   update_interval: 5s
-  #   unit_of_measurement: "lx"
-  #   icon: mdi:brightness-6
-  #   accuracy_decimals: 0
-  #   filters:
-  #     - lambda: |-
-  #         return ( 3 - x ) / 0.03;
+  # 光照传感器 (已修正为 GPIO34，GPIO3 不可用)
+  - platform: adc
+    pin: GPIO34
+    name: ${device_name}_brightness
+    attenuation: 11db
+    update_interval: 5s
+    unit_of_measurement: "lx"
+    icon: mdi:brightness-6
+    accuracy_decimals: 0
+    filters:
+      - lambda: |-
+          return ( 3 - x ) / 0.03;
   - platform: internal_temperature
     name: ${device_name}_cpu_temprature
     icon: mdi:thermometer
     internal: true
-  # LD2410 雷达数据 (统一使用标准命名)
+  # 雷达数据
   - platform: ld2410
     moving_distance:
       name: ${device_name}_move_distance
@@ -137,31 +143,36 @@ sensor:
       name: ${device_name}_static_energy
       internal: true
 
-# 数值控制 (合并为一个平台块，避免冲突)
+# 数值控制 (合并为一个平台块)
 number:
   - platform: ld2410
-    # 内部调试用
+    # 内部调试
     max_move_distance_gate:
+      id: ${device_id}_max_move_distance
       name: ${device_name}_max_move_distance
       default: 4.5
       internal: true
     max_still_distance_gate:
+      id: ${device_id}_max_static_distance
       name: ${device_name}_max_static_distance
       default: 4.5
       internal: true
     move_sensitivity:
+      id: ${device_id}_move_sensitivity
       name: ${device_name}_move_sensitivity
       default: 99
       internal: true
     still_sensitivity:
+      id: ${device_id}_static_sensitivity
       name: ${device_name}_static_sensitivity
       default: 15
       internal: true
     unattended_duration:
+      id: ${device_id}_unattended_duration
       name: ${device_name}_unattended_duration
       default: 5
       internal: true
-    # 外部控制用
+    # 外部控制
     timeout:
       name: "LD2410 超时"
     light_threshold:
@@ -177,7 +188,7 @@ button:
       name: ${device_name}_get_conf
       internal: true
     reset_conf:
-      id: ${device_name}_reset_conf
+      id: ${device_id}_reset_conf
       name: ${device_name}_reset_conf
     query_params:
       name: "LD2410 查询参数"
