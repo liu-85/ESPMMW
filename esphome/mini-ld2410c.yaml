@@ -36,14 +36,18 @@ web_server:
   version: 3
   include_internal: true
 
+# UART 配置
 uart:
   id: ld2410_uart
   tx_pin: GPIO17
   rx_pin: GPIO21
   baud_rate: 256000
 
+# LD2410 核心组件
 ld2410:
   uart_id: ld2410_uart
+
+# 文本传感器
 text_sensor:
   - platform: wifi_info
     ip_address:
@@ -58,15 +62,17 @@ text_sensor:
     name: ${device_name}_esphome_version
     icon: mdi:information
     internal: true
+
+# 二进制传感器 (人体感应使用 GPIO16 引脚，避免 UART 实体冲突)
 binary_sensor:
   - platform: gpio
-    pin: 16
+    pin: GPIO16
     name: ${device_name}_mmw
     device_class: occupancy
     icon: mdi:motion-sensor
   - platform: gpio
     pin:
-      number: 2
+      number: GPIO2
       mode:
         input: true
         pullup: true
@@ -78,6 +84,7 @@ binary_sensor:
       then:
         - button.press: ${device_name}_reset_conf
 
+# 传感器
 sensor:
   - platform: wifi_signal
     name: ${device_name}_signal
@@ -99,42 +106,46 @@ sensor:
     loop_time:
       name: ${device_name}_loop_time
       internal: true
-  - platform: adc
-    pin: 3
-    name: ${device_name}_brightness
-    attenuation: 11db
-    update_interval: 5s
-    unit_of_measurement: "lx"
-    icon: mdi:brightness-6
-    accuracy_decimals: 0
-    filters:
-      - lambda: |-
-          return ( 3 - x ) / 0.03;
+  # ⚠️ GPIO3 不能做 ADC，已注释。如需光照传感器请改用 GPIO34/35/36/39
+  # - platform: adc
+  #   pin: GPIO34 
+  #   name: ${device_name}_brightness
+  #   attenuation: 11db
+  #   update_interval: 5s
+  #   unit_of_measurement: "lx"
+  #   icon: mdi:brightness-6
+  #   accuracy_decimals: 0
+  #   filters:
+  #     - lambda: |-
+  #         return ( 3 - x ) / 0.03;
   - platform: internal_temperature
     name: ${device_name}_cpu_temprature
     icon: mdi:thermometer
     internal: true
+  # LD2410 雷达数据 (统一使用标准命名)
   - platform: ld2410
-    move_distance:
+    moving_distance:
       name: ${device_name}_move_distance
       internal: true
-    move_energy:
+    moving_energy:
       name: ${device_name}_move_energy
       internal: true
-    static_distance:
+    still_distance:
       name: ${device_name}_static_distance
       internal: true
-    static_energy:
+    still_energy:
       name: ${device_name}_static_energy
       internal: true
 
+# 数值控制 (合并为一个平台块，避免冲突)
 number:
   - platform: ld2410
-    max_move_distance:
+    # 内部调试用
+    max_move_distance_gate:
       name: ${device_name}_max_move_distance
       default: 4.5
       internal: true
-    max_static_distance:
+    max_still_distance_gate:
       name: ${device_name}_max_static_distance
       default: 4.5
       internal: true
@@ -142,7 +153,7 @@ number:
       name: ${device_name}_move_sensitivity
       default: 99
       internal: true
-    static_sensitivity:
+    still_sensitivity:
       name: ${device_name}_static_sensitivity
       default: 15
       internal: true
@@ -150,16 +161,13 @@ number:
       name: ${device_name}_unattended_duration
       default: 5
       internal: true
-  - platform: ld2410
+    # 外部控制用
     timeout:
       name: "LD2410 超时"
-    max_move_distance_gate:
-      name: "LD2410 最大移动距离门限"
-    max_still_distance_gate:
-      name: "LD2410 最大静止距离门限"
     light_threshold:
       name: "LD2410 光阈值"
 
+# 按钮控制 (合并为一个平台块)
 button:
   - platform: restart
     name: ${device_name}_reboot
@@ -171,14 +179,14 @@ button:
     reset_conf:
       id: ${device_name}_reset_conf
       name: ${device_name}_reset_conf
-  - platform: ld2410
     query_params:
       name: "LD2410 查询参数"
     restart:
       name: "LD2410 传感器重启"
     factory_reset:
       name: "LD2410 出厂重置"
-# 开关、按钮、数值、文本传感器全部保留
+
+# 开关控制
 switch:
   - platform: ld2410
     engineering_mode:
@@ -186,6 +194,3 @@ switch:
     bluetooth:
       name: "LD2410 传感器蓝牙"
       restore_mode: ALWAYS_OFF
-
-
-
