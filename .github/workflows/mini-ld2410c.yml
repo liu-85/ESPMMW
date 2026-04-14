@@ -1,4 +1,4 @@
-name: ESPHome mini-ld2410c
+name: ESPHome minild2410c
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        device: [mini-ld2410c]
+        device: [minild2410c]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,13 +69,13 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
-          name: mini-ld2410c-firmware
+          name: minild2410c-firmware
           path: output
 
       - name: Prepare Release Assets
         run: |
           # 稳健提取 bin 文件
-          find output/ -name "firmware.bin" -exec mv {} mini-ld2410c.bin \;
+          find output/ -name "firmware.bin" -exec mv {} minild2410c.bin \;
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -99,6 +99,6 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.HA_TOKEN }}" \
             -d '{
               "version": "${{ github.event.inputs.version }}",
-              "devices": ["mini-ld2410c"],
+              "devices": ["minild2410c"],
               "release_url": "https://github.com/${{ github.repository }}/releases/tag/${{ github.event.inputs.version }}"
             }'
