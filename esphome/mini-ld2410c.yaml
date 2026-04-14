@@ -13,7 +13,9 @@ esp32:
   framework:
     type: arduino
     version: latest
-
+external_components:
+  - source: github://esphome/esphome    # ← 去官方 ESPHome 仓库找
+    components: [ld2410]                # ← 找到 ld2410 组件
 logger:
   level: debug
 debug:
