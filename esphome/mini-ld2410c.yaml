@@ -1,6 +1,3 @@
-external_components:
-  - source: github://esphome/esphome
-    components: [ld2410]
 substitutions:
   device_name: mini-ld2410
 esphome:
