@@ -24,7 +24,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ========== 使用 Secrets 创建 secrets.yaml ==========
       - name: Create secrets.yaml
         run: |
           cat > esphome/secrets.yaml << EOF
@@ -35,7 +34,6 @@ jobs:
           ha_url: "${{ secrets.HA_URL }}"
           ha_token: "${{ secrets.HA_TOKEN }}"
           EOF
-      # ====================================================
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -50,37 +48,34 @@ jobs:
       - name: Build Firmware
         run: esphome compile esphome/${{ matrix.device }}.yaml
 
-      - name: List Build Output
-        run: |
-          echo "Listing build directory..."
-          ls -la esphome/.esphome/build/${{ matrix.device }}/.pioenvs/${{ matrix.device }}/ || echo "Build directory not found"
-
       - name: Upload Firmware Artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.device }}-firmware
+          # 使用通配符递归查找所有生成的 bin 和 elf
           path: |
-            esphome/.esphome/build/${{ matrix.device }}/.pioenvs/${{ matrix.device }}/firmware.bin
-            esphome/.esphome/build/${{ matrix.device }}/.pioenvs/${{ matrix.device }}/firmware.elf
+            **/firmware.bin
+            **/firmware.elf
           retention-days: 7
           if-no-files-found: error
 
   release:
     needs: build
     runs-on: ubuntu-latest
+    # 仅在手动触发并输入版本号时执行
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
     steps:
-      - name: Download mini-ld2410c Artifact
+      - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
           name: mini-ld2410c-firmware
-          path: mini-ld2410c
-
+          path: output
 
       - name: Prepare Release Assets
         run: |
-          mv mini-ld2410c/firmware.bin mini-ld2410c.bin
+          # 稳健提取 bin 文件
+          find output/ -name "firmware.bin" -exec mv {} mini-ld2410c.bin \;
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -88,14 +83,10 @@ jobs:
           tag_name: ${{ github.event.inputs.version }}
           name: ESPHome Firmware ${{ github.event.inputs.version }}
           draft: false
-          files: |
-            mini-ld2410c.bin
-            # espmmw02.bin
-            # espmmw03.bin
+          files: mini-ld2410c.bin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ========== 使用 Secrets 通知 HA ==========
   notify:
     needs: [build, release]
     runs-on: ubuntu-latest
@@ -111,4 +102,3 @@ jobs:
               "devices": ["mini-ld2410c"],
               "release_url": "https://github.com/${{ github.repository }}/releases/tag/${{ github.event.inputs.version }}"
             }'
-  # ==========================================
