@@ -71,29 +71,16 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
     steps:
-      - name: Download espmmw01 Artifact
+      - name: Download mini-ld2410c Artifact
         uses: actions/download-artifact@v4
         with:
           name: mini-ld2410c-firmware
           path: mini-ld2410c
 
-      # - name: Download espmmw02 Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: espmmw02-firmware
-          path: espmmw02
 
-      # - name: Download espmmw03 Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: espmmw03-firmware
-          path: espmmw03
-
-      # - name: Prepare Release Assets
+      - name: Prepare Release Assets
         run: |
-          mv espmmw01/firmware.bin espmmw01.bin
-          mv espmmw02/firmware.bin espmmw02.bin
-          mv espmmw03/firmware.bin espmmw03.bin
+          mv mini-ld2410c/firmware.bin mini-ld2410c.bin
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
