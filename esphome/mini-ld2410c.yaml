@@ -44,51 +44,117 @@ uart:
 
 ld2410:
   uart_id: ld2410_uart
-
-# 只保留你自己加的 GPIO 传感器
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: ${device_name}_ip
+      icon: mdi:ip-outline
+      internal: true
+    mac_address:
+      name: ${device_name}_mac
+      icon: mdi:map-marker-outline
+      internal: true
+  - platform: version
+    name: ${device_name}_esphome_version
+    icon: mdi:information
+    internal: true
+  - platform: ld2410
+    version:
+    name: "LD2410 固件版本"
+    mac_address:
+      name: "LD2410 蓝牙MAC"
 binary_sensor:
   - platform: gpio
-    name: "LD2410 GPIO16 人体"
+    pin: 16
+    name: ${device_name}_mmw
+    device_class: occupancy
+    icon: mdi:motion-sensor
+  - platform: gpio
     pin:
-      number: GPIO16
-      mode: INPUT_PULLUP
-    device_class: motion
-    filters:
-      - delayed_off: 3s
+      number: 2
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    name: ${device_name}_button
+    icon: mdi:radiobox-marked
+    internal: true
+    on_press:
+      then:
+        - button.press: ${device_name}_reset_conf
 
-# LD2410 传感器配置
 sensor:
-  - platform: ld2410
-    moving_distance:
-      name: "移动距离"
-    still_distance:
-      name: "静止距离"
-    moving_energy:
-      name: "移动能量"
-    still_energy:
-      name: "静止能量"
-    detection_distance:
-      name: "检测距离"
-
-# 开关、按钮、数值、文本传感器全部保留
-switch:
-  - platform: ld2410
-    engineering_mode:
-      name: "LD2410 工程模式"
-    bluetooth:
-      name: "LD2410 传感器蓝牙"
-      restore_mode: ALWAYS_OFF
-
-button:
-  - platform: ld2410
-    query_params:
-      name: "LD2410 查询参数"
-    restart:
-      name: "LD2410 传感器重启"
-    factory_reset:
-      name: "LD2410 出厂重置"
+  - platform: wifi_signal
+    name: ${device_name}_signal
+    icon: mdi:signal
+    internal: true
+  - platform: debug
+    free:
+      name: ${device_name}_free
+      unit_of_measurement: "KB"
+      internal: true
+      filters:
+        - lambda: "return x / 1024;"
+    block:
+      name: ${device_name}_max_block
+      unit_of_measurement: "KB"
+      internal: true
+      filters:
+        - lambda: "return x / 1024;"
+    loop_time:
+      name: ${device_name}_loop_time
+      internal: true
+  - platform: adc
+    pin: 3
+    name: ${device_name}_brightness
+    attenuation: 11db
+    update_interval: 5s
+    unit_of_measurement: "lx"
+    icon: mdi:brightness-6
+    accuracy_decimals: 0
+    filters:
+      - lambda: |-
+          return ( 3 - x ) / 0.03;
+  - platform: internal_temperature
+    name: ${device_name}_cpu_temprature
+    icon: mdi:thermometer
+    internal: true
+  - platform: ra2413mt
+    move_distance:
+      name: ${device_name}_move_distance
+      internal: true
+    move_energy:
+      name: ${device_name}_move_energy
+      internal: true
+    static_distance:
+      name: ${device_name}_static_distance
+      internal: true
+    static_energy:
+      name: ${device_name}_static_energy
+      internal: true
 
 number:
+  - platform: ra2413mt
+    max_move_distance:
+      name: ${device_name}_max_move_distance
+      default: 4.5
+      internal: true
+    max_static_distance:
+      name: ${device_name}_max_static_distance
+      default: 4.5
+      internal: true
+    move_sensitivity:
+      name: ${device_name}_move_sensitivity
+      default: 99
+      internal: true
+    static_sensitivity:
+      name: ${device_name}_static_sensitivity
+      default: 15
+      internal: true
+    unattended_duration:
+      name: ${device_name}_unattended_duration
+      default: 5
+      internal: true
   - platform: ld2410
     timeout:
       name: "LD2410 超时"
@@ -99,9 +165,32 @@ number:
     light_threshold:
       name: "LD2410 光阈值"
 
-text_sensor:
+button:
+  - platform: restart
+    name: ${device_name}_reboot
+    internal: true
+  - platform: ra2413mt
+    get_conf:
+      name: ${device_name}_get_conf
+      internal: true
+    reset_conf:
+      id: ${device_name}_reset_conf
+      name: ${device_name}_reset_conf
   - platform: ld2410
-    version:
-      name: "LD2410 固件版本"
-    mac_address:
-      name: "LD2410 蓝牙MAC"
+    query_params:
+      name: "LD2410 查询参数"
+    restart:
+      name: "LD2410 传感器重启"
+    factory_reset:
+      name: "LD2410 出厂重置"
+# 开关、按钮、数值、文本传感器全部保留
+switch:
+  - platform: ld2410
+    engineering_mode:
+      name: "LD2410 工程模式"
+    bluetooth:
+      name: "LD2410 传感器蓝牙"
+      restore_mode: ALWAYS_OFF
+
+
+
