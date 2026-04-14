@@ -50,11 +50,11 @@ binary_sensor:
     has_target:
       name: "LD2410 有人"
     has_moving_target:
-      name: "移动目标"
+      name: "LD2410 移动目标"
     has_still_target:
-      name: "静止目标"
+      name: "LD2410 静止目标"
   - platform: gpio
-    name: "LD2410 GPIO16"
+    name: "LD2410 GPIO16 人体"
     pin:
       number: GPIO16
       mode: INPUT_PULLUP
@@ -65,47 +65,47 @@ binary_sensor:
 sensor:
   - platform: ld2410
     moving_distance:
-      name: "移动距离"
+      name: "LD2410 移动距离"
     still_distance:
-      name: "静止距离"
+      name: "LD2410 静止距离"
     moving_energy:
-      name: "移动能量"
+      name: "LD2410 移动能量"
     still_energy:
-      name: "静止能量"
+      name: "LD2410 静止能量"
     detection_distance:
-      name: "检测距离"
+      name: "LD2410 检测距离"
 
 switch:
   - platform: ld2410
     engineering_mode:
-      name: "工程模式"
+      name: "LD2410 工程模式"
     bluetooth:
-      name: "传感器蓝牙"
+      name: "LD2410 传感器蓝牙"
       restore_mode: ALWAYS_OFF
 
 button:
   - platform: ld2410
     query_params:
-      name: "查询参数"
+      name: "LD2410 查询参数"
     restart:
-      name: "传感器重启"
+      name: "LD2410 传感器重启"
     factory_reset:
-      name: "出厂重置"
+      name: "LD2410 出厂重置"
 
 number:
   - platform: ld2410
     timeout:
-      name: "超时"
+      name: "LD2410 超时"
     max_move_distance_gate:
-      name: "最大移动距离门限"
+      name: "LD2410 最大移动距离门限"
     max_still_distance_gate:
-      name: "最大静止距离门限"
+      name: "LD2410 最大静止距离门限"
     light_threshold:
-      name: "光阈值"
+      name: "LD2410 光阈值"
 
 text_sensor:
   - platform: ld2410
     version:
-      name: "固件版本"
+      name: "LD2410 固件版本"
     mac_address:
-      name: "蓝牙MAC"
+      name: "LD2410 蓝牙MAC"
