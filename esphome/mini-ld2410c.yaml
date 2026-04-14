@@ -52,7 +52,7 @@ ld2410:
   id: ld2410_comp
 
 binary_sensor:
-  - platform: ld2410
+  - platform: gpio
     has_target:
       name: 存在 P
     has_moving_target:
@@ -69,7 +69,7 @@ binary_sensor:
     filters:
       - delayed_off: 3s  # 人走延时 3 秒，可改
 sensor:
-  - platform: ld2410
+  - platform: distance
     moving_distance:
       name: 移动距离 Dm
     still_distance:
@@ -82,7 +82,7 @@ sensor:
       name: 检测距离 D
 
 switch:
-  - platform: ld2410
+  - platform: mode
     engineering_mode:
       name: 工程模式 EM
     bluetooth:
@@ -90,7 +90,7 @@ switch:
       restore_mode: ALWAYS_OFF
 
 button:
-  - platform: ld2410
+  - platform: query
     query_params:
       name: 查询参数 Q
     restart:
@@ -99,7 +99,7 @@ button:
       name: 出厂重置 FR
 
 number:
-  - platform: ld2410
+  - platform: move_distance
     timeout:
       name: 超时 T
     max_move_distance_gate:
@@ -110,7 +110,7 @@ number:
       name: 光阈值 LT
 
 text_sensor:
-  - platform: ld2410
+  - platform: text
     version:
       name: 固件版本 FW
     mac_address:
