@@ -1,5 +1,15 @@
+external_components:
+  - source: github://esphome/esphome
+    components: [ld2410]
 substitutions:
   device_name: mini-ld2410c
+esphome:
+  name: ${device_name}
+  friendly_name: mini-ld2410c
+  on_boot:
+    priority: -100
+    then:
+      - delay: 5s
 esphome:
   name: ${device_name}
   friendly_name: mini-ld2410c
@@ -13,9 +23,6 @@ esp32:
   framework:
     type: arduino
     version: latest
-external_components:
-  - source: github://esphome/esphome    # ← 去官方 ESPHome 仓库找
-    components: [ld2410]                # ← 找到 ld2410 组件
 logger:
   level: debug
 debug:
