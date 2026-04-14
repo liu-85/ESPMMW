@@ -60,9 +60,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.device }}-firmware
+          # 使用通配符递归查找，避免因目录结构变动导致的报错
           path: |
-            esphome/.esphome/build/${{ matrix.device }}/.pioenvs/${{ matrix.device }}/firmware.bin
-            esphome/.esphome/build/${{ matrix.device }}/.pioenvs/${{ matrix.device }}/firmware.elf
+            **/firmware.bin
+            **/firmware.elf
           retention-days: 7
           if-no-files-found: error
 
