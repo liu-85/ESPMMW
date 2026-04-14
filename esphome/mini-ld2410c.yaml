@@ -44,23 +44,17 @@ uart:
 
 ld2410:
   uart_id: ld2410_uart
-  id: ld2410_sensor
 
 binary_sensor:
   - platform: ld2410
-    id: ld2410_has_target
     has_target:
       name: "LD2410 有人"
-  - platform: ld2410
-    id: ld2410_moving
     has_moving_target:
       name: "移动目标"
-  - platform: ld2410
-    id: ld2410_still
     has_still_target:
       name: "静止目标"
   - platform: gpio
-    name: "LD2410 GPIO16 人体感应"
+    name: "LD2410 GPIO16"
     pin:
       number: GPIO16
       mode: INPUT_PULLUP
