@@ -46,13 +46,7 @@ ld2410:
   uart_id: ld2410_uart
 
 binary_sensor:
-  - platform: ld2410
-    has_target:
-      name: "LD2410 有人"
-    has_moving_target:
-      name: "LD2410 移动目标"
-    has_still_target:
-      name: "LD2410 静止目标"
+  # 只保留 GPIO，LD2410 的三个传感器会自动生成，不用手动写！
   - platform: gpio
     name: "LD2410 GPIO16 人体"
     pin:
