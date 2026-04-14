@@ -1,12 +1,12 @@
 substitutions:
   # 显示名称可以带横杠
-  device_name: mini-ld2410c
+  device_name: minild2410c
   # 内部 ID 必须用下划线，这是修复报错的关键
-  device_id: mini_ld2410c
+  device_id: minild2410c
 
 esphome:
   name: ${device_name}
-  friendly_name: mini-ld2410c
+  friendly_name: minild2410c
   on_boot:
     priority: -100
     then:
