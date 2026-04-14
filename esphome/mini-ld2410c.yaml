@@ -45,8 +45,8 @@ uart:
 ld2410:
   uart_id: ld2410_uart
 
+# 只保留你自己加的 GPIO 传感器
 binary_sensor:
-  # 只保留 GPIO，LD2410 的三个传感器会自动生成，不用手动写！
   - platform: gpio
     name: "LD2410 GPIO16 人体"
     pin:
@@ -56,19 +56,10 @@ binary_sensor:
     filters:
       - delayed_off: 3s
 
-sensor:
-  - platform: ld2410
-    moving_distance:
-      name: "LD2410 移动距离"
-    still_distance:
-      name: "LD2410 静止距离"
-    moving_energy:
-      name: "LD2410 移动能量"
-    still_energy:
-      name: "LD2410 静止能量"
-    detection_distance:
-      name: "LD2410 检测距离"
+# LD2410 自带传感器全部删掉，自动生成
+# sensor:  这里全部删除！
 
+# 开关、按钮、数值、文本传感器全部保留
 switch:
   - platform: ld2410
     engineering_mode:
