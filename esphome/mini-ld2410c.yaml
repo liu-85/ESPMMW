@@ -56,8 +56,25 @@ binary_sensor:
     filters:
       - delayed_off: 3s
 
-# LD2410 自带传感器全部删掉，自动生成
-# sensor:  这里全部删除！
+# LD2410 传感器配置
+# 注意：在新版 ESPHome 中，需要为每个传感器添加 id 以避免名称冲突
+sensor:
+  - platform: ld2410
+    moving_distance:
+      id: mini_ld2410_moving_distance
+      name: "LD2410 移动距离"
+    still_distance:
+      id: mini_ld2410_still_distance
+      name: "LD2410 静止距离"
+    moving_energy:
+      id: mini_ld2410_moving_energy
+      name: "LD2410 移动能量"
+    still_energy:
+      id: mini_ld2410_still_energy
+      name: "LD2410 静止能量"
+    detection_distance:
+      id: mini_ld2410_detection_distance
+      name: "LD2410 检测距离"
 
 # 开关、按钮、数值、文本传感器全部保留
 switch:
