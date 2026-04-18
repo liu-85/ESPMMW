@@ -69,6 +69,10 @@ text_sensor:
     name: ${device_name}_esphome_version
     icon: mdi:information
     internal: true
+  - platform: version
+    name: "固件版本"
+    hide_timestamp: true  # 只保留版本号，去掉编译时间（可选）
+    # hide_timestamp: false  # 显示完整：2026.4.0 Apr 18 2026, 15:00:00
 
 # 二进制传感器
 binary_sensor:
