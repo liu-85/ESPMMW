@@ -82,8 +82,8 @@ binary_sensor:
 sensor:
   # 这是你在 HA 中需要的第二个核心实体：光照
   - platform: adc
-    pin: 3
-    name: ${device_name}_brightness
+    pin: GPIO34
+    name: "${device_name} Illuminance"
     attenuation: 11db
     update_interval: 5s
     unit_of_measurement: "lx"
