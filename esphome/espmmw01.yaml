@@ -188,22 +188,23 @@ button:
       name: ${device_name}_reset_conf
       internal: true
  # 灯 开关机
-- platform: template
-  name: ${device_name}_开关
-  icon: mdi:remote-tv
-  on_press:
-    - remote_transmitter.transmit_pronto:
+  # 电视开关机
+  - platform: template
+    name: ${device_name}_TV_开关
+    icon: mdi:remote-tv
+    on_press:
+      - remote_transmitter.transmit_pronto:
         carrier_frequency: 38kHz
-        data: "0000 006D 0002 0000 015B 0055 0017 0181"
+        data: "0000 006D 0002 0000 15B 55 17 181"
 
-# 夜灯 开关
-- platform: template
-  name: ${device_name}_夜灯
-  icon: mdi:lightbulb-night
-  on_press:
-    - remote_transmitter.transmit_pronto:
+# 夜灯开关
+  - platform: template
+    name: ${device_name}_夜灯
+    icon: mdi:lightbulb-night
+    on_press:
+      - remote_transmitter.transmit_pronto:
         carrier_frequency: 38kHz
-        data: "0000 006D 0022 0000 015B 00AC 0017 0015 0017 0015 0017 0015 0017 0015 0017 0015 0017 0015 0017 0015 0017 0015 0017 003F 0017 003F 0017 003F 0017 003F 0017 003F 0017 003F 0017 003F 0017 0015 0017 003F 0017 0015 0017 0015 0017 0015 0017 0015 0017 0015 0017 0015 0017 0015 0017 0015 0017 003F 0017 003F 0017 003F 0017 003F 0017 003F 0017 003F 0017 003F 0017 0181"
+        data: "0000 006D 0022 0000 15B AC 17 15 17 15 17 15 17 15 17 15 17 15 17 15 17 15 17 3F 17 3F 17 3F 17 3F 17 3F 17 3F 17 3F 17 15 17 3F 17 15 17 15 17 15 17 15 17 15 17 15 17 15 17 15 17 3F 17 3F 17 3F 17 3F 17 3F 17 3F 17 3F 17 181"
 remote_transmitter:
   pin: 1
   carrier_duty_percent: 50%
