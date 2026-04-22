@@ -187,10 +187,6 @@ button:
       id: ${device_name}_reset_conf
       name: ${device_name}_reset_conf
       internal: true
- # 灯 开关机
-  # 电视开关机
-  button:
-  # 电视开关
   - platform: template
     name: ${device_name}_tv_switch
     icon: mdi:television
