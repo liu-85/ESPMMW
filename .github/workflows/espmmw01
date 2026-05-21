@@ -1,0 +1,95 @@
+name: Build All ESPHome Devices
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+        default: ''
+  push:
+    branches:
+      - main
+    paths:
+      - 'esphome/**'
+      - '.github/workflows/espmmw01.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        device: [espmmw01]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ========== 使用 Secrets 创建 secrets.yaml ==========
+      - name: Create secrets.yaml
+        run: |
+          cat > esphome/secrets.yaml << EOF
+          wifi_ssid: "${{ secrets.WIFI_SSID }}"
+          wifi_password: "${{ secrets.WIFI_PASSWORD }}"
+          ota_password: "${{ secrets.OTA_PASSWORD }}"
+          api_encryption_key: "${{ secrets.API_ENCRYPTION_KEY }}"
+          ha_url: "${{ secrets.HA_URL }}"
+          ha_token: "${{ secrets.HA_TOKEN }}"
+          EOF
+      # ====================================================
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install ESPHome
+        run: |
+          pip install --upgrade pip
+          pip install esphome==2025.7.5
+
+      - name: Build Firmware
+        run: esphome compile esphome/${{ matrix.device }}.yaml
+
+      - name: List Build Output
+        run: |
+          echo "Listing build directory..."
+          ls -la esphome/.esphome/build/${{ matrix.device }}/.pioenvs/${{ matrix.device }}/ || echo "Build directory not found"
+
+      - name: Upload Firmware Artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.device }}-firmware
+          path: |
+            esphome/.esphome/build/${{ matrix.device }}/.pioenvs/${{ matrix.device }}/firmware.bin
+            esphome/.esphome/build/${{ matrix.device }}/.pioenvs/${{ matrix.device }}/firmware.elf
+          retention-days: 7
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
+    steps:
+      - name: Download espmmw01 Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: espmmw01-firmware
+          path: espmmw01
+
+      - name: Prepare Release Assets
+        run: |
+          mv espmmw01/firmware.bin espmmw01.bin
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: ESPHome Firmware ${{ github.event.inputs.version }}
+          draft: false
+          files: |
+            espmmw01.bin
+            
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
