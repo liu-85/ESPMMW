@@ -211,46 +211,10 @@ number:
     restore_value: true
     initial_value: 0
 
-button:
-  - platform: restart
-    name: ${device_name}_reboot
-    internal: true
-  - platform: ra2413mt
-    get_conf:
-      name: ${device_name}_get_conf
-      internal: true
-    reset_conf:
-      id: ${device_name}_reset_conf
-      name: ${device_name}_reset_conf
-      internal: true
-
-  # 保存红外码到当前槽位
-  - platform: template
-    name: ${device_name}_ir_save_to_slot
-    icon: mdi:content-save
-    on_press:
-      - lambda: |-
-          int slot = id(ir_slot).state;
-          std::string code = id(captured_ir).state;
-          if (code.empty()) {
-            ESP_LOGE("IR", "没有捕获到红外码，请先对着接收器按遥控器按键");
-            return;
-          }
-          id(saved_ir_codes)[slot] = code;
-          ESP_LOGI("IR", "已保存红外码到槽位 %d (重启后丢失)", slot);
-          id(saved_ir_info).update();
-          auto call = id(status_led).turn_on();
-          call.set_brightness(0.5);
-          call.set_rgb(0, 255, 0);
-          call.perform();
-          delay(200);
-          id(status_led).turn_off();
-
-  # 发送当前槽位的红外码
-  - platform: template
-    name: ${device_name}_ir_send_slot
-    icon: mdi:send
-    on_press:
+# 脚本：发送红外码（避免YAML复杂嵌套）
+script:
+  - id: send_ir_code
+    then:
       - remote_transmitter.transmit_raw:
           carrier_frequency: 38kHz
           code: !lambda |-
@@ -277,7 +241,46 @@ button:
           delay(100);
           id(status_led).turn_off();
 
-  # 删除当前槽位的红外码
+button:
+  - platform: restart
+    name: ${device_name}_reboot
+    internal: true
+  - platform: ra2413mt
+    get_conf:
+      name: ${device_name}_get_conf
+      internal: true
+    reset_conf:
+      id: ${device_name}_reset_conf
+      name: ${device_name}_reset_conf
+      internal: true
+
+  - platform: template
+    name: ${device_name}_ir_save_to_slot
+    icon: mdi:content-save
+    on_press:
+      - lambda: |-
+          int slot = id(ir_slot).state;
+          std::string code = id(captured_ir).state;
+          if (code.empty()) {
+            ESP_LOGE("IR", "没有捕获到红外码，请先对着接收器按遥控器按键");
+            return;
+          }
+          id(saved_ir_codes)[slot] = code;
+          ESP_LOGI("IR", "已保存红外码到槽位 %d (重启后丢失)", slot);
+          id(saved_ir_info).update();
+          auto call = id(status_led).turn_on();
+          call.set_brightness(0.5);
+          call.set_rgb(0, 255, 0);
+          call.perform();
+          delay(200);
+          id(status_led).turn_off();
+
+  - platform: template
+    name: ${device_name}_ir_send_slot
+    icon: mdi:send
+    on_press:
+      - script.execute: send_ir_code
+
   - platform: template
     name: ${device_name}_ir_delete_slot
     icon: mdi:delete
@@ -311,7 +314,7 @@ remote_receiver:
           for (auto i : x) {
             raw_str += to_string(i) + ",";
           }
-          if (!raw_str.empty()) raw_str.pop_str();
+          if (!raw_str.empty()) raw_str.pop_back();
           id(captured_ir).state = raw_str;
           id(captured_ir).update();
           ESP_LOGI("IR", "捕获到 RAW 码: %s", raw_str.c_str());
