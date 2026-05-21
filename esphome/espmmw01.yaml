@@ -8,18 +8,6 @@ esphome:
     priority: -100
     then:
       - delay: 5s
-      - lambda: |-
-          // 从 Preferences 加载所有已保存的红外码到全局数组
-          for (int i = 0; i < 10; i++) {
-            auto prefs = global_preferences->make_preference<std::string>(i);
-            std::string loaded_code;
-            if (prefs.load(&loaded_code)) {
-              id(saved_ir_codes)[i] = loaded_code;
-            } else {
-              id(saved_ir_codes)[i] = "";
-            }
-          }
-          id(saved_ir_info).update();
 
 esp32:
   board: esp32-c3-devkitm-1
@@ -68,7 +56,6 @@ uart:
 ra2413mt:
   uart_id: ra2413mt_uart
 
-# 状态指示灯
 light:
   - platform: esp32_rmt_led_strip
     id: status_led
@@ -79,14 +66,14 @@ light:
     name: ${device_name}_status_led
     restore_mode: ALWAYS_OFF
 
-# ------------------- 红外管理相关全局变量 -------------------
+# ========== 全局变量（仅运行时存储，重启丢失） ==========
 globals:
   - id: saved_ir_codes
     type: std::array<std::string, 10>
     restore_value: no
     initial_value: '{"", "", "", "", "", "", "", "", "", ""}'
 
-# ------------------- 传感器（原有全部保留） -------------------
+# ========== 传感器 ==========
 text_sensor:
   - platform: wifi_info
     ip_address:
@@ -101,20 +88,18 @@ text_sensor:
     name: ${device_name}_esphome_version
     icon: mdi:information
     internal: true
-  # 新增：显示当前捕获的红外 RAW 码
   - platform: template
     name: ${device_name}_captured_ir
     id: captured_ir
     icon: mdi:remote
     update_interval: never
-  # 新增：显示已保存的红外码摘要
   - platform: template
     name: ${device_name}_saved_ir_info
     id: saved_ir_info
     icon: mdi:format-list-bulleted
     update_interval: 1s
     lambda: |-
-      std::string info = "已保存按键（槽位:RAW码前20字符）";
+      std::string info = "已保存按键（槽位:前20字符）";
       for (int i = 0; i < 10; i++) {
         if (!id(saved_ir_codes)[i].empty()) {
           std::string preview = id(saved_ir_codes)[i].substr(0, 20);
@@ -169,7 +154,7 @@ sensor:
   - platform: adc
     pin: 3
     name: ${device_name}_brightness
-    attenuation: 12db        # 修正：原 11db 改为 12db
+    attenuation: 12db
     update_interval: 5s
     unit_of_measurement: "lx"
     icon: mdi:brightness-6
@@ -217,7 +202,6 @@ number:
       name: ${device_name}_unattended_duration
       default: 5
       internal: true
-  # 新增：选择红外码槽位 (0-9)
   - platform: template
     name: ${device_name}_ir_slot
     id: ir_slot
@@ -242,8 +226,7 @@ button:
       name: ${device_name}_reset_conf
       internal: true
 
-  # ========== 红外管理按钮 ==========
-  # 1. 将当前捕获的红外码保存到当前槽位
+  # ===== 红外管理按钮（无持久化，重启丢失） =====
   - platform: template
     name: ${device_name}_ir_save_to_slot
     icon: mdi:content-save
@@ -252,16 +235,12 @@ button:
           int slot = id(ir_slot).state;
           std::string code = id(captured_ir).state;
           if (code.empty()) {
-            ESP_LOGE("IR", "没有捕获到红外码，请先对着接收器按遥控器按键");
+            ESP_LOGE("IR", "没有捕获到红外码");
             return;
           }
           id(saved_ir_codes)[slot] = code;
-          // 持久化到 Preferences
-          auto prefs = global_preferences->make_preference<std::string>(slot);
-          prefs.save(&code);
-          ESP_LOGI("IR", "已保存红外码到槽位 %d: %s", slot, code.c_str());
+          ESP_LOGI("IR", "已保存到槽位 %d (重启将丢失)", slot);
           id(saved_ir_info).update();
-          // 可选：闪烁一下状态灯提示
           auto call = id(status_led).turn_on();
           call.set_brightness(0.5);
           call.set_rgb(0, 255, 0);
@@ -269,7 +248,6 @@ button:
           delay(200);
           id(status_led).turn_off();
 
-  # 2. 发送当前槽位中保存的红外码（修正发射API）
   - platform: template
     name: ${device_name}_ir_send_slot
     icon: mdi:send
@@ -278,10 +256,9 @@ button:
           int slot = id(ir_slot).state;
           std::string code = id(saved_ir_codes)[slot];
           if (code.empty()) {
-            ESP_LOGE("IR", "槽位 %d 为空，请先保存红外码", slot);
+            ESP_LOGE("IR", "槽位 %d 为空", slot);
             return;
           }
-          // 解析 RAW 码字符串 "123,-456,789"
           std::vector<int> raw;
           size_t pos = 0, last = 0;
           while ((pos = code.find(",", last)) != std::string::npos) {
@@ -289,13 +266,11 @@ button:
             last = pos + 1;
           }
           raw.push_back(std::stoi(code.substr(last)));
-          // 修正：使用 make_call() 构建发射请求
-          auto call = id(my_remote_transmitter).make_call();
+          // 正确发射方法：调用 transmit_raw
+          auto call = id(my_remote_transmitter).transmit_raw(raw);
           call.set_carrier_frequency(38000);
-          call.set_raw_code(raw);
           call.perform();
-          ESP_LOGI("IR", "已发送槽位 %d 的红外码", slot);
-          // 闪烁状态灯提示
+          ESP_LOGI("IR", "已发送槽位 %d", slot);
           auto light_call = id(status_led).turn_on();
           light_call.set_brightness(0.5);
           light_call.set_rgb(255, 0, 0);
@@ -303,7 +278,6 @@ button:
           delay(100);
           id(status_led).turn_off();
 
-  # 3. 删除当前槽位的红外码
   - platform: template
     name: ${device_name}_ir_delete_slot
     icon: mdi:delete
@@ -311,12 +285,8 @@ button:
       - lambda: |-
           int slot = id(ir_slot).state;
           id(saved_ir_codes)[slot] = "";
-          std::string empty_str = "";
-          auto prefs = global_preferences->make_preference<std::string>(slot);
-          prefs.save(&empty_str);
-          ESP_LOGI("IR", "已删除槽位 %d 的红外码", slot);
+          ESP_LOGI("IR", "已删除槽位 %d", slot);
           id(saved_ir_info).update();
-          // 闪烁白光提示
           auto call = id(status_led).turn_on();
           call.set_brightness(1.0);
           call.set_rgb(255, 255, 255);
@@ -324,8 +294,7 @@ button:
           delay(200);
           id(status_led).turn_off();
 
-# ------------------- 红外收发硬件 -------------------
-# 添加显式 ID 以供 lambda 引用
+# ========== 红外收发硬件 ==========
 remote_transmitter:
   id: my_remote_transmitter
   pin: 1
@@ -346,8 +315,7 @@ remote_receiver:
           if (!raw_str.empty()) raw_str.pop_back();
           id(captured_ir).state = raw_str;
           id(captured_ir).update();
-          ESP_LOGI("IR", "捕获到 RAW 码: %s", raw_str.c_str());
-          // 短暂闪烁绿灯表示收到信号
+          ESP_LOGI("IR", "捕获 RAW 码: %s", raw_str.c_str());
           auto call = id(status_led).turn_on();
           call.set_brightness(0.3);
           call.set_rgb(0, 255, 0);
