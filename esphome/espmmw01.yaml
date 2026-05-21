@@ -3,7 +3,7 @@ substitutions:
 
 esphome:
   name: ${device_name}
-  friendly_name: espmmw01
+  friendly_name: ${device_name}
   on_boot:
     priority: -100
     then:
@@ -13,7 +13,6 @@ esp32:
   board: esp32-c3-devkitm-1
   framework:
     type: arduino
-    version: latest
 
 external_components:
   - source: github://liu-85/ESPMMW
@@ -25,12 +24,9 @@ logger:
 api:
   encryption:
     key: !secret api_encryption_key
-  reboot_timeout: 5min
 
 ota:
-  - platform: esphome
-    password: !secret ota_password
-  - platform: web_server
+  password: !secret ota_password
 
 wifi:
   ssid: !secret wifi_ssid
@@ -39,16 +35,12 @@ wifi:
 
 web_server:
   port: 80
-  version: 3
-  include_internal: true
 
 uart:
   - id: ra2413mt_uart
     rx_pin: 5
     tx_pin: 6
     baud_rate: 256000
-    data_bits: 8
-    stop_bits: 1
 
 ra2413mt:
   uart_id: ra2413mt_uart
@@ -68,39 +60,35 @@ globals:
     type: std::array<std::string, 10>
     restore_value: no
     initial_value: '{"", "", "", "", "", "", "", "", "", ""}'
+  - id: temp_ir_code
+    type: std::string
+    restore_value: no
+    initial_value: ""
 
 text_sensor:
   - platform: wifi_info
     ip_address:
       name: ${device_name}_ip
-      icon: mdi:ip-outline
       internal: true
     mac_address:
       name: ${device_name}_mac
-      icon: mdi:map-marker-outline
       internal: true
-  - platform: version
-    name: ${device_name}_esphome_version
-    icon: mdi:information
-    internal: true
   - platform: template
-    name: ${device_name}_captured_ir
+    name: ${device_name}_ir_captured
     id: captured_ir
-    icon: mdi:remote
     update_interval: never
   - platform: template
-    name: ${device_name}_saved_ir_info
+    name: ${device_name}_ir_slots
     id: saved_ir_info
-    icon: mdi:format-list-bulleted
     update_interval: 1s
     lambda: |-
-      std::string info = "已保存红外码 (槽位:前20字符)";
+      std::string info = "红外槽位:\n";
       for (int i = 0; i < 10; i++) {
         if (!id(saved_ir_codes)[i].empty()) {
-          std::string preview = id(saved_ir_codes)[i].substr(0, 20);
-          info += "\n[" + std::to_string(i) + "] " + preview + "...";
+          std::string preview = id(saved_ir_codes)[i].substr(0, 15);
+          info += "[" + std::to_string(i) + "] " + preview + "...\n";
         } else {
-          info += "\n[" + std::to_string(i) + "] (空)";
+          info += "[" + std::to_string(i) + "] 空\n";
         }
       }
       return {info};
@@ -110,7 +98,6 @@ binary_sensor:
     pin: 4
     name: ${device_name}_mmw
     device_class: occupancy
-    icon: mdi:motion-sensor
   - platform: gpio
     pin:
       number: 2
@@ -119,7 +106,6 @@ binary_sensor:
         pullup: true
       inverted: true
     name: ${device_name}_button
-    icon: mdi:radiobox-marked
     internal: true
     on_press:
       then:
@@ -128,22 +114,14 @@ binary_sensor:
 sensor:
   - platform: wifi_signal
     name: ${device_name}_signal
-    icon: mdi:signal
     internal: true
   - platform: adc
     pin: 3
     name: ${device_name}_brightness
     attenuation: 12db
     update_interval: 5s
-    unit_of_measurement: "lx"
-    icon: mdi:brightness-6
-    accuracy_decimals: 0
     filters:
-      - lambda: "return (3 - x) / 0.03;"
-  - platform: internal_temperature
-    name: ${device_name}_cpu_temperature
-    icon: mdi:thermometer
-    internal: true
+      - lambda: return (3.0f - x) / 0.03f;
   - platform: ra2413mt
     move_distance:
       name: ${device_name}_move_distance
@@ -155,6 +133,16 @@ sensor:
       name: ${device_name}_static_energy
 
 number:
+  - platform: template
+    name: ${device_name}_ir_slot
+    id: ir_slot
+    min_value: 0
+    max_value: 9
+    step: 1
+    mode: box
+    optimistic: true
+    restore_value: true
+    initial_value: 0
   - platform: ra2413mt
     max_move_distance:
       name: ${device_name}_max_move_distance
@@ -171,16 +159,6 @@ number:
     unattended_duration:
       name: ${device_name}_unattended_duration
       default: 5
-  - platform: template
-    name: ${device_name}_ir_slot
-    id: ir_slot
-    min_value: 0
-    max_value: 9
-    step: 1
-    mode: box
-    optimistic: true
-    restore_value: true
-    initial_value: 0
 
 button:
   - platform: restart
@@ -195,55 +173,54 @@ button:
       name: ${device_name}_reset_conf
       internal: true
   - platform: template
-    name: ${device_name}_ir_save_to_slot
+    name: 接收红外信号
+    icon: mdi:remote
+    on_press:
+      - lambda: |-
+          ESP_LOGI("IR", "请按遥控器按键...");
+          id(status_led).turn_on().set_brightness(0.3).set_rgb(255, 255, 0).perform();
+  - platform: template
+    name: 保存到槽位
     icon: mdi:content-save
     on_press:
       - lambda: |-
           int slot = id(ir_slot).state;
-          std::string code = id(captured_ir).state;
+          std::string code = id(temp_ir_code);
           if (code.empty()) {
-            ESP_LOGE("IR", "没有捕获到红外码");
+            ESP_LOGE("IR", "没有捕获红外码");
             return;
           }
           id(saved_ir_codes)[slot] = code;
           ESP_LOGI("IR", "已保存到槽位 %d", slot);
           id(saved_ir_info).update();
-          auto call = id(status_led).turn_on();
-          call.set_brightness(0.5);
-          call.set_rgb(0, 255, 0);
-          call.perform();
+          id(status_led).turn_on().set_brightness(0.5).set_rgb(0, 255, 0).perform();
           delay(200);
           id(status_led).turn_off();
   - platform: template
-    name: ${device_name}_ir_send_slot
+    name: 发送槽位信号
     icon: mdi:send
     on_press:
-      - remote_transmitter.transmit_raw:
-          carrier_frequency: 38kHz
-          code: !lambda |-
-            int slot = id(ir_slot).state;
-            std::string code = id(saved_ir_codes)[slot];
-            if (code.empty()) return std::vector<int>();
-            std::vector<int> raw;
-            size_t pos = 0, last = 0;
-            while ((pos = code.find(",", last)) != std::string::npos) {
-              raw.push_back(std::stoi(code.substr(last, pos - last)));
-              last = pos + 1;
-            }
-            raw.push_back(std::stoi(code.substr(last)));
-            return raw;
+      - lambda: |-
+          int slot = id(ir_slot).state;
+          std::string code = id(saved_ir_codes)[slot];
+          if (code.empty()) {
+            ESP_LOGE("IR", "槽位 %d 为空", slot);
+            return;
+          }
+          ESP_LOGI("IR", "发送槽位 %d", slot);
+          id(status_led).turn_on().set_brightness(0.5).set_rgb(0, 0, 255).perform();
   - platform: template
-    name: ${device_name}_ir_delete_slot
+    name: 清空槽位
     icon: mdi:delete
     on_press:
       - lambda: |-
           int slot = id(ir_slot).state;
           id(saved_ir_codes)[slot] = "";
-          ESP_LOGI("IR", "已删除槽位 %d", slot);
+          ESP_LOGI("IR", "已清空槽位 %d", slot);
           id(saved_ir_info).update();
 
 remote_transmitter:
-  id: my_remote_transmitter
+  id: ir_tx
   pin: 1
   carrier_duty_percent: 50%
 
@@ -251,21 +228,18 @@ remote_receiver:
   pin:
     number: 0
     inverted: true
-  dump: all
+  dump: raw
   on_raw:
     then:
       - lambda: |-
           std::string raw_str;
-          for (auto i : x) {
-            raw_str += to_string(i) + ",";
+          for (auto v : x) {
+            raw_str += to_string(v) + ",";
           }
           if (!raw_str.empty()) raw_str.pop_back();
+          id(temp_ir_code) = raw_str;
           id(captured_ir).state = raw_str;
-          id(captured_ir).update();
           ESP_LOGI("IR", "捕获: %s", raw_str.c_str());
-          auto call = id(status_led).turn_on();
-          call.set_brightness(0.3);
-          call.set_rgb(0, 255, 0);
-          call.perform();
-          delay(50);
+          id(status_led).turn_on().set_brightness(0.5).set_rgb(0, 255, 0).perform();
+          delay(100);
           id(status_led).turn_off();
