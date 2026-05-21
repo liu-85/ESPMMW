@@ -17,13 +17,10 @@ esp32:
 
 external_components:
   - source: github://liu-85/ESPMMW
-    components: [ ra2413mt ]
+    components: [ra2413mt]
 
 logger:
   level: debug
-
-debug:
-  update_interval: 5s
 
 api:
   encryption:
@@ -133,22 +130,6 @@ sensor:
     name: ${device_name}_signal
     icon: mdi:signal
     internal: true
-  - platform: debug
-    free:
-      name: ${device_name}_free
-      unit_of_measurement: "KB"
-      internal: true
-      filters:
-        - lambda: "return x / 1024;"
-    block:
-      name: ${device_name}_max_block
-      unit_of_measurement: "KB"
-      internal: true
-      filters:
-        - lambda: "return x / 1024;"
-    loop_time:
-      name: ${device_name}_loop_time
-      internal: true
   - platform: adc
     pin: 3
     name: ${device_name}_brightness
@@ -158,8 +139,7 @@ sensor:
     icon: mdi:brightness-6
     accuracy_decimals: 0
     filters:
-      - lambda: |-
-          return ( 3 - x ) / 0.03;
+      - lambda: "return (3 - x) / 0.03;"
   - platform: internal_temperature
     name: ${device_name}_cpu_temperature
     icon: mdi:thermometer
@@ -167,39 +147,30 @@ sensor:
   - platform: ra2413mt
     move_distance:
       name: ${device_name}_move_distance
-      internal: true
     move_energy:
       name: ${device_name}_move_energy
-      internal: true
     static_distance:
       name: ${device_name}_static_distance
-      internal: true
     static_energy:
       name: ${device_name}_static_energy
-      internal: true
 
 number:
   - platform: ra2413mt
     max_move_distance:
       name: ${device_name}_max_move_distance
       default: 4.5
-      internal: true
     max_static_distance:
       name: ${device_name}_max_static_distance
       default: 4.5
-      internal: true
     move_sensitivity:
       name: ${device_name}_move_sensitivity
       default: 99
-      internal: true
     static_sensitivity:
       name: ${device_name}_static_sensitivity
       default: 15
-      internal: true
     unattended_duration:
       name: ${device_name}_unattended_duration
       default: 5
-      internal: true
   - platform: template
     name: ${device_name}_ir_slot
     id: ir_slot
@@ -210,36 +181,6 @@ number:
     optimistic: true
     restore_value: true
     initial_value: 0
-
-# 脚本：发送红外码（避免YAML复杂嵌套）
-script:
-  - id: send_ir_code
-    then:
-      - remote_transmitter.transmit_raw:
-          carrier_frequency: 38kHz
-          code: !lambda |-
-            int slot = id(ir_slot).state;
-            std::string code = id(saved_ir_codes)[slot];
-            if (code.empty()) {
-              ESP_LOGE("IR", "槽位 %d 为空，请先保存红外码", slot);
-              return std::vector<int>();
-            }
-            std::vector<int> raw;
-            size_t pos = 0, last = 0;
-            while ((pos = code.find(",", last)) != std::string::npos) {
-              raw.push_back(std::stoi(code.substr(last, pos - last)));
-              last = pos + 1;
-            }
-            raw.push_back(std::stoi(code.substr(last)));
-            return raw;
-      - lambda: |-
-          ESP_LOGI("IR", "已发送槽位 %d 的红外码", id(ir_slot).state);
-          auto light_call = id(status_led).turn_on();
-          light_call.set_brightness(0.5);
-          light_call.set_rgb(255, 0, 0);
-          light_call.perform();
-          delay(100);
-          id(status_led).turn_off();
 
 button:
   - platform: restart
@@ -253,7 +194,6 @@ button:
       id: ${device_name}_reset_conf
       name: ${device_name}_reset_conf
       internal: true
-
   - platform: template
     name: ${device_name}_ir_save_to_slot
     icon: mdi:content-save
@@ -262,11 +202,11 @@ button:
           int slot = id(ir_slot).state;
           std::string code = id(captured_ir).state;
           if (code.empty()) {
-            ESP_LOGE("IR", "没有捕获到红外码，请先对着接收器按遥控器按键");
+            ESP_LOGE("IR", "没有捕获到红外码");
             return;
           }
           id(saved_ir_codes)[slot] = code;
-          ESP_LOGI("IR", "已保存红外码到槽位 %d (重启后丢失)", slot);
+          ESP_LOGI("IR", "已保存到槽位 %d", slot);
           id(saved_ir_info).update();
           auto call = id(status_led).turn_on();
           call.set_brightness(0.5);
@@ -274,13 +214,24 @@ button:
           call.perform();
           delay(200);
           id(status_led).turn_off();
-
   - platform: template
     name: ${device_name}_ir_send_slot
     icon: mdi:send
     on_press:
-      - script.execute: send_ir_code
-
+      - remote_transmitter.transmit_raw:
+          carrier_frequency: 38kHz
+          code: !lambda |-
+            int slot = id(ir_slot).state;
+            std::string code = id(saved_ir_codes)[slot];
+            if (code.empty()) return std::vector<int>();
+            std::vector<int> raw;
+            size_t pos = 0, last = 0;
+            while ((pos = code.find(",", last)) != std::string::npos) {
+              raw.push_back(std::stoi(code.substr(last, pos - last)));
+              last = pos + 1;
+            }
+            raw.push_back(std::stoi(code.substr(last)));
+            return raw;
   - platform: template
     name: ${device_name}_ir_delete_slot
     icon: mdi:delete
@@ -288,14 +239,8 @@ button:
       - lambda: |-
           int slot = id(ir_slot).state;
           id(saved_ir_codes)[slot] = "";
-          ESP_LOGI("IR", "已删除槽位 %d 的红外码", slot);
+          ESP_LOGI("IR", "已删除槽位 %d", slot);
           id(saved_ir_info).update();
-          auto call = id(status_led).turn_on();
-          call.set_brightness(1.0);
-          call.set_rgb(255, 255, 255);
-          call.perform();
-          delay(200);
-          id(status_led).turn_off();
 
 remote_transmitter:
   id: my_remote_transmitter
@@ -317,7 +262,7 @@ remote_receiver:
           if (!raw_str.empty()) raw_str.pop_back();
           id(captured_ir).state = raw_str;
           id(captured_ir).update();
-          ESP_LOGI("IR", "捕获到 RAW 码: %s", raw_str.c_str());
+          ESP_LOGI("IR", "捕获: %s", raw_str.c_str());
           auto call = id(status_led).turn_on();
           call.set_brightness(0.3);
           call.set_rgb(0, 255, 0);
