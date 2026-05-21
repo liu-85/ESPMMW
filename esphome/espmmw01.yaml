@@ -56,7 +56,6 @@ uart:
 ra2413mt:
   uart_id: ra2413mt_uart
 
-# 状态指示灯
 light:
   - platform: esp32_rmt_led_strip
     id: status_led
@@ -67,14 +66,12 @@ light:
     name: ${device_name}_status_led
     restore_mode: ALWAYS_OFF
 
-# ========== 全局变量：存储红外码（仅运行时，重启丢失） ==========
 globals:
   - id: saved_ir_codes
     type: std::array<std::string, 10>
     restore_value: no
     initial_value: '{"", "", "", "", "", "", "", "", "", ""}'
 
-# ========== 文本传感器 ==========
 text_sensor:
   - platform: wifi_info
     ip_address:
@@ -89,13 +86,11 @@ text_sensor:
     name: ${device_name}_esphome_version
     icon: mdi:information
     internal: true
-  # 显示最近捕获的原始红外码
   - platform: template
     name: ${device_name}_captured_ir
     id: captured_ir
     icon: mdi:remote
     update_interval: never
-  # 显示已保存的按键摘要
   - platform: template
     name: ${device_name}_saved_ir_info
     id: saved_ir_info
@@ -113,7 +108,6 @@ text_sensor:
       }
       return {info};
 
-# ========== 二进制传感器 ==========
 binary_sensor:
   - platform: gpio
     pin: 4
@@ -134,7 +128,6 @@ binary_sensor:
       then:
         - button.press: ${device_name}_reset_conf
 
-# ========== 传感器（含光感、雷达等） ==========
 sensor:
   - platform: wifi_signal
     name: ${device_name}_signal
@@ -159,7 +152,7 @@ sensor:
   - platform: adc
     pin: 3
     name: ${device_name}_brightness
-    attenuation: 12db           # 已修正为12db
+    attenuation: 12db
     update_interval: 5s
     unit_of_measurement: "lx"
     icon: mdi:brightness-6
@@ -185,7 +178,6 @@ sensor:
       name: ${device_name}_static_energy
       internal: true
 
-# ========== 数字调节 ==========
 number:
   - platform: ra2413mt
     max_move_distance:
@@ -208,7 +200,6 @@ number:
       name: ${device_name}_unattended_duration
       default: 5
       internal: true
-  # 红外槽位选择 (0~9)
   - platform: template
     name: ${device_name}_ir_slot
     id: ir_slot
@@ -220,7 +211,6 @@ number:
     restore_value: true
     initial_value: 0
 
-# ========== 按钮 ==========
 button:
   - platform: restart
     name: ${device_name}_reboot
@@ -234,7 +224,7 @@ button:
       name: ${device_name}_reset_conf
       internal: true
 
-  # ---------- 红外学习 ----------
+  # 保存红外码到当前槽位
   - platform: template
     name: ${device_name}_ir_save_to_slot
     icon: mdi:content-save
@@ -256,7 +246,7 @@ button:
           delay(200);
           id(status_led).turn_off();
 
-  # ---------- 红外发送（已修正，可编译通过） ----------
+  # 发送当前槽位的红外码
   - platform: template
     name: ${device_name}_ir_send_slot
     icon: mdi:send
@@ -287,7 +277,7 @@ button:
           delay(100);
           id(status_led).turn_off();
 
-  # ---------- 红外删除 ----------
+  # 删除当前槽位的红外码
   - platform: template
     name: ${device_name}_ir_delete_slot
     icon: mdi:delete
@@ -304,7 +294,6 @@ button:
           delay(200);
           id(status_led).turn_off();
 
-# ========== 红外收发硬件 ==========
 remote_transmitter:
   id: my_remote_transmitter
   pin: 1
@@ -322,7 +311,7 @@ remote_receiver:
           for (auto i : x) {
             raw_str += to_string(i) + ",";
           }
-          if (!raw_str.empty()) raw_str.pop_back();
+          if (!raw_str.empty()) raw_str.pop_str();
           id(captured_ir).state = raw_str;
           id(captured_ir).update();
           ESP_LOGI("IR", "捕获到 RAW 码: %s", raw_str.c_str());
