@@ -68,7 +68,7 @@ uart:
 ra2413mt:
   uart_id: ra2413mt_uart
 
-# 状态指示灯（保留）
+# 状态指示灯
 light:
   - platform: esp32_rmt_led_strip
     id: status_led
@@ -169,7 +169,7 @@ sensor:
   - platform: adc
     pin: 3
     name: ${device_name}_brightness
-    attenuation: 11db
+    attenuation: 12db        # 修正：原 11db 改为 12db
     update_interval: 5s
     unit_of_measurement: "lx"
     icon: mdi:brightness-6
@@ -269,7 +269,7 @@ button:
           delay(200);
           id(status_led).turn_off();
 
-  # 2. 发送当前槽位中保存的红外码
+  # 2. 发送当前槽位中保存的红外码（修正发射API）
   - platform: template
     name: ${device_name}_ir_send_slot
     icon: mdi:send
@@ -289,8 +289,8 @@ button:
             last = pos + 1;
           }
           raw.push_back(std::stoi(code.substr(last)));
-          // 发射红外
-          auto call = id(remote_transmitter).turn_on();
+          // 修正：使用 make_call() 构建发射请求
+          auto call = id(my_remote_transmitter).make_call();
           call.set_carrier_frequency(38000);
           call.set_raw_code(raw);
           call.perform();
@@ -325,7 +325,9 @@ button:
           id(status_led).turn_off();
 
 # ------------------- 红外收发硬件 -------------------
+# 添加显式 ID 以供 lambda 引用
 remote_transmitter:
+  id: my_remote_transmitter
   pin: 1
   carrier_duty_percent: 50%
 
