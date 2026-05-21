@@ -249,7 +249,7 @@ button:
           delay(200);
           id(status_led).turn_off();
 
-  - platform: template
+ - platform: template
     name: ${device_name}_ir_send_slot
     icon: mdi:send
     on_press:
